@@ -45,12 +45,13 @@ def test_oplab_sem_next_data_falha_alto():
 
 def test_fundamentus_iso8859_and_position():
     raw = Path("tests/fixtures/fundamentus.html").read_bytes()
-    # Fixture may be UTF-8 on disk; decoder under test is always iso-8859-1.
+    # Fixture is iso-8859-1 on disk (or UTF-8 that we re-encode); parser always gets iso-8859-1.
     try:
-        raw.decode("iso-8859-1")
-        if "cotações".encode("iso-8859-1") not in raw:
-            raw = raw.decode("utf-8").encode("iso-8859-1")
+        raw.decode("utf-8")
     except UnicodeDecodeError:
+        # Already iso-8859-1 bytes (e.g. 0xe7); pass through.
+        raw.decode("iso-8859-1")
+    else:
         raw = raw.decode("utf-8").encode("iso-8859-1")
     rows = parse_fundamentus_html(raw)
     petr = next(r for r in rows if r.ticker == "PETR4")
