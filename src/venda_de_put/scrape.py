@@ -35,20 +35,21 @@ def _around_hhmm(now: datetime, hhmm: str, window_min: int = 30) -> bool:
 def should_fetch_fundamentus(
     now: datetime, cfg: AppConfig, previous: Snapshot | None
 ) -> bool:
+    if previous is None or not previous.fundamentus_rows:
+        return True
     local = now.astimezone(TZ) if now.tzinfo else now.replace(tzinfo=TZ)
     if local.day not in cfg.fundamentus_days:
         return False
     has_today = False
-    if previous is not None:
-        for s in previous.stamps:
-            if s.source != "fundamentus":
-                continue
-            collected = s.collected_at
-            if collected.tzinfo is None:
-                collected = collected.replace(tzinfo=TZ)
-            if collected.astimezone(TZ).date() == local.date():
-                has_today = True
-                break
+    for s in previous.stamps:
+        if s.source != "fundamentus":
+            continue
+        collected = s.collected_at
+        if collected.tzinfo is None:
+            collected = collected.replace(tzinfo=TZ)
+        if collected.astimezone(TZ).date() == local.date():
+            has_today = True
+            break
     return _around_hhmm(local, cfg.fundamentus_time) or not has_today
 
 

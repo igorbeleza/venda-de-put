@@ -168,3 +168,11 @@ def test_fundamentus_not_fetched_at_1100_when_previous_exists():
     second = run_scrape(price, iv, fund2, AppConfig(), universe, set(), later, previous=first)
     assert fund2.calls == 0
     assert second.fundamentus_rows == first.fundamentus_rows
+
+
+def test_fundamentus_fetched_on_first_scrape_when_no_previous():
+    price, iv, fund, universe, _ = _petr_inputs()
+    now = datetime(2026, 8, 13, 11, 0, tzinfo=TZ)  # not day 1 or 15
+    snap = run_scrape(price, iv, fund, AppConfig(), universe, set(), now, previous=None)
+    assert fund.calls == 1
+    assert snap.fundamentus_rows == fund.rows
