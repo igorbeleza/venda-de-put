@@ -10,6 +10,7 @@ def test_itub4_cached_excel_is_fora_not_sinal():
     ])[0]
     asset = apply_technical(fund, TechnicalInput(38.54, 40.95, 23.23, 38.81, None, None), AppConfig())
     assert asset.tendencia == "fora"
+    assert asset.timing == "ENTRADA"
     assert asset.sinal == "—"
     assert abs(asset.score_t - 100.02323) < 1e-9
     assert asset.score_c is None
@@ -26,6 +27,20 @@ def test_sinal_aceso_entra_lista_combinada():
     lists = build_lists([asset])
     assert [a.ticker for a in lists.combinado] == ["BOM3"]
     assert asset.score_t == (20.0 - 19.5) / 19.5
+
+
+def test_timing_aguardar_when_entrada_fails_with_inputs_present():
+    # IFR, preço e boll_inf presentes; IFR fora da banda → aguardar; SINAL "—"
+    fund = score_fundamentals([
+        AssetInput("REC3", "Varejo", 5, 1, 4, 0.2, 2, 0.2, 0.3, 0.1, 0.2)
+    ])[0]
+    # preço > MM200 (alta), IFR 70 fora de [10, 50]
+    asset = apply_technical(
+        fund, TechnicalInput(20.0, 18.0, 70.0, 19.5, None, None), AppConfig()
+    )
+    assert asset.tendencia == "alta"
+    assert asset.timing == "aguardar"
+    assert asset.sinal == "—"
 
 
 def test_lista1_top_equals_excel_fixture():

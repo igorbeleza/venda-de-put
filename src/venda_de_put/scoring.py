@@ -134,7 +134,7 @@ def apply_technical(fund: FundScore, tech: TechnicalInput, cfg: AppConfig) -> Sc
     elif cfg.ifr_min <= tech.ifr <= cfg.ifr_max and tech.preco <= tech.boll_inf * (1 + cfg.folga):
         timing = "ENTRADA"
     else:
-        timing = None
+        timing = "aguardar"
 
     if tendencia is None or not timing_inputs_ok:
         sinal = None
