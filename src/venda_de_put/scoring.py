@@ -169,6 +169,7 @@ def apply_technical(fund: FundScore, tech: TechnicalInput, cfg: AppConfig) -> Sc
         score_t=score_t,
         score_c=score_c,
         iv_hv=iv_hv,
+        technicals=tech,
     )
 
 

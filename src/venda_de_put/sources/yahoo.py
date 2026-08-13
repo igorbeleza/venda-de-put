@@ -58,9 +58,18 @@ class YahooHttp:
                 url = YAHOO_CHART.format(ticker=ticker)
                 if "range=max" in url:
                     raise ValueError("Yahoo URL não pode usar range=max")
-                resp = client.get(url, headers={"User-Agent": USER_AGENT})
-                resp.raise_for_status()
-                out[ticker] = parse_yahoo_chart(resp.json(), ticker)
+                last_err: Exception | None = None
+                for _attempt in range(2):
+                    try:
+                        resp = client.get(url, headers={"User-Agent": USER_AGENT})
+                        resp.raise_for_status()
+                        out[ticker] = parse_yahoo_chart(resp.json(), ticker)
+                        last_err = None
+                        break
+                    except Exception as exc:
+                        last_err = exc
+                if last_err is not None:
+                    continue
         finally:
             if self._owns and self._client is None:
                 client.close()

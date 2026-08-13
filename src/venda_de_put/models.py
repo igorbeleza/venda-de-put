@@ -78,6 +78,15 @@ class AppConfig:
 
 
 @dataclass(frozen=True)
+class SourceStamp:
+    source: str
+    collected_at: datetime
+    ok: bool
+    error: Optional[str]
+    stale: bool
+
+
+@dataclass(frozen=True)
 class ScoredAsset:
     ticker: str
     fund: FundScore
@@ -87,6 +96,7 @@ class ScoredAsset:
     score_t: Optional[float]
     score_c: Optional[float]
     iv_hv: Optional[float]
+    technicals: Optional[TechnicalInput] = None
 
 
 @dataclass(frozen=True)
@@ -138,3 +148,12 @@ class Fundamentals:
     patrim_liq: Optional[float]
     div_liq_patrim: Optional[float]
     cresc_rec_5a: Optional[float]
+
+
+@dataclass(frozen=True)
+class Snapshot:
+    generated_at: datetime
+    stamps: list[SourceStamp]
+    assets: list[ScoredAsset]
+    lists: Lists
+    fundamentus_rows: list[Fundamentals]
