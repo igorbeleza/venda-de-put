@@ -56,13 +56,57 @@
         </article>
       </div>
     </section>
-    <section id="pane-ativos" class="pane" hidden></section>
-    <section id="pane-dados" class="pane" hidden></section>
-    <section id="pane-setores" class="pane" hidden></section>
-    <section id="pane-config" class="pane" hidden></section>
-    <section id="pane-vencimentos" class="pane" hidden></section>
-    <section id="pane-feriados" class="pane" hidden></section>
-    <section id="pane-instrucoes" class="pane" hidden></section>
+    <section id="pane-ativos" class="pane" hidden>
+      <div class="toolbar">
+        <label>Filtro
+          <input type="search" id="filtro-ativos" placeholder="ticker ou grupo">
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="mostrar-calculo">
+          mostrar cálculo
+        </label>
+      </div>
+      <div class="table-wrap"><table id="tbl-ativos" class="data-table"></table></div>
+    </section>
+    <section id="pane-dados" class="pane" hidden>
+      <p id="carimbo-dados" class="carimbo-linha"></p>
+      <div class="table-wrap"><table id="tbl-dados" class="data-table"></table></div>
+    </section>
+    <section id="pane-setores" class="pane" hidden>
+      <div class="table-wrap"><table id="tbl-setores" class="data-table"></table></div>
+    </section>
+    <section id="pane-config" class="pane" hidden>
+      <form id="form-config" class="config-form">
+        <label>IFR mín <input class="edit" name="ifr_min" type="number" step="any"></label>
+        <label>IFR máx <input class="edit" name="ifr_max" type="number" step="any"></label>
+        <label>Folga <input class="edit" name="folga" type="number" step="any"></label>
+        <label>Meta prêmio 30d <input class="edit" name="meta_premio_30d" type="number" step="any"></label>
+        <label>MM períodos <input class="edit" name="mm_periodos" type="number"></label>
+        <label>MM tipo <input class="edit" name="mm_tipo" type="text"></label>
+        <label>IFR períodos <input class="edit" name="ifr_periodos" type="number"></label>
+        <label>Boll períodos <input class="edit" name="boll_periodos" type="number"></label>
+        <label>Boll desvios <input class="edit" name="boll_desvios" type="number" step="any"></label>
+        <label>HV períodos <input class="edit" name="hv_periodos" type="number"></label>
+        <label>Horários scrape <input class="edit" name="scrape_times" type="text"></label>
+        <label>Dias Fundamentus <input class="edit" name="fundamentus_days" type="text"></label>
+        <label>Hora Fundamentus <input class="edit" name="fundamentus_time" type="text"></label>
+        <button type="submit" id="btn-salvar-config">Salvar</button>
+      </form>
+    </section>
+    <section id="pane-vencimentos" class="pane" hidden>
+      <div class="table-wrap"><table id="tbl-vencimentos" class="data-table"></table></div>
+    </section>
+    <section id="pane-feriados" class="pane" hidden>
+      <div class="toolbar">
+        <label>Data <input type="date" id="feriado-data"></label>
+        <label>Descrição <input type="text" id="feriado-desc"></label>
+        <button type="button" id="btn-add-feriado">Adicionar</button>
+      </div>
+      <div class="table-wrap"><table id="tbl-feriados" class="data-table"></table></div>
+    </section>
+    <section id="pane-instrucoes" class="pane" hidden>
+      <article id="texto-instrucoes" class="instrucoes"></article>
+    </section>
     <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo.</footer>
   </div>
   <script src="/static/app.js"></script>
