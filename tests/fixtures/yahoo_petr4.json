@@ -1,0 +1,21 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "regularMarketPrice": 41.75,
+          "fiftyTwoWeekHigh": 42.0,
+          "fiftyTwoWeekLow": 30.0
+        },
+        "timestamp": [1, 2, 3],
+        "indicators": {
+          "quote": [
+            {
+              "close": [40.0, null, 41.0]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

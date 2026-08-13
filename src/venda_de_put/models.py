@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -94,3 +94,47 @@ class Lists:
     fundamentalista: list[ScoredAsset]
     tecnico: list[ScoredAsset]
     combinado: list[ScoredAsset]
+
+
+@dataclass(frozen=True)
+class CandleSeries:
+    ticker: str
+    closes: list[Optional[float]]
+    preco: Optional[float]
+    max_52: Optional[float]
+    min_52: Optional[float]
+    collected_at: datetime
+
+
+@dataclass(frozen=True)
+class IvPoint:
+    ticker: str
+    iv: Optional[float]
+    iv_rank: Optional[float]
+    iv_percentile: Optional[float]
+
+
+@dataclass(frozen=True)
+class Fundamentals:
+    ticker: str
+    cotacao: Optional[float]
+    pl: Optional[float]
+    pvp: Optional[float]
+    psr: Optional[float]
+    dy: Optional[float]
+    p_ativo: Optional[float]
+    p_cap_giro: Optional[float]
+    p_ebit: Optional[float]
+    p_ativ_circ_liq: Optional[float]
+    ev_ebit: Optional[float]
+    ev_ebitda: Optional[float]
+    mrg_bruta: Optional[float]
+    mrg_ebit: Optional[float]
+    mrg_liq: Optional[float]
+    liq_corr: Optional[float]
+    roic: Optional[float]
+    roe: Optional[float]
+    liq_2meses: Optional[float]
+    patrim_liq: Optional[float]
+    div_liq_patrim: Optional[float]
+    cresc_rec_5a: Optional[float]
