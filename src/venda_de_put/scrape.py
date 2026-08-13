@@ -44,7 +44,21 @@ def run_scrape(
     series: dict = {}
     try:
         series = price.fetch(tickers)
-        stamps.append(SourceStamp("yahoo", now, True, None, False))
+        # YahooHttp swallows per-ticker failures and may return {}; treat zero
+        # matches as a failed source so the stamp is not ok=True on total outage.
+        if not any(t in series for t in tickers):
+            series = {}
+            stamps.append(
+                SourceStamp(
+                    "yahoo",
+                    now,
+                    False,
+                    "no series for requested tickers",
+                    True,
+                )
+            )
+        else:
+            stamps.append(SourceStamp("yahoo", now, True, None, False))
     except Exception as e:
         stamps.append(SourceStamp("yahoo", now, False, str(e), True))
 

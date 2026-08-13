@@ -96,3 +96,27 @@ def test_failed_source_keeps_previous_block(tmp_path: Path):
     stamp = next(s for s in second.stamps if s.source == "oplab")
     assert stamp.ok is False
     assert stamp.stale is True
+
+
+def test_empty_yahoo_fetch_stamps_failed_and_reuses_previous():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    assert petr_first.technicals is not None
+    assert petr_first.technicals.iv == 0.35
+    assert petr_first.technicals.preco == 41.75
+
+    empty_price = FakePrice({})
+    second = run_scrape(
+        empty_price, iv, fund, AppConfig(), universe, set(), now, previous=first
+    )
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.stale is True
+    assert stamp.error
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals is not None
+    assert petr.technicals.iv == 0.35
+    assert petr.technicals.preco == 41.75
+    assert petr.technicals.mm200 == petr_first.technicals.mm200
+    assert petr.technicals.ifr == petr_first.technicals.ifr
