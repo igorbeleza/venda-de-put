@@ -1,0 +1,15 @@
+{
+  "ifr_min": 10,
+  "ifr_max": 50,
+  "folga": 0.05,
+  "meta_premio_30d": 0.0115,
+  "mm_periodos": 200,
+  "mm_tipo": "sma",
+  "ifr_periodos": 14,
+  "boll_periodos": 20,
+  "boll_desvios": 2.0,
+  "hv_periodos": 21,
+  "scrape_times": ["11:00", "13:00", "16:00"],
+  "fundamentus_days": [1, 15],
+  "fundamentus_time": "07:00"
+}
