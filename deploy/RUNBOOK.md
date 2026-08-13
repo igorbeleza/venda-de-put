@@ -70,7 +70,8 @@ sudo systemctl daemon-reload
 sudo mkdir -p /opt/venda-de-put/etc
 sudo htpasswd -c /opt/venda-de-put/etc/htpasswd igor
 # ou o nome de usuário que o usuário quiser
-sudo chown -R venda-de-put:venda-de-put /opt/venda-de-put/etc
+sudo chown root:www-data /opt/venda-de-put/etc/htpasswd
+sudo chmod 640 /opt/venda-de-put/etc/htpasswd
 ```
 
 ### 6. Arquivo nginx **novo** apenas

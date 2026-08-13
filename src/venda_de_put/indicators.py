@@ -66,9 +66,9 @@ def hv_log(closes: Sequence[Optional[float]], n: int = 21) -> Optional[float]:
         return None
     prices = valid[-(n + 1) :]
     log_rets = [math.log(prices[i] / prices[i - 1]) for i in range(1, len(prices))]
+    if n < 2:
+        return None
     mean = sum(log_rets) / n
-    if n == 1:
-        return 0.0
     var = sum((r - mean) ** 2 for r in log_rets) / (n - 1)
     return math.sqrt(var) * math.sqrt(252.0)
 

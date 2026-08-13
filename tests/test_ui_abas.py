@@ -54,7 +54,7 @@ def _fund(ticker: str, **kw) -> Fundamentals:
 def data_dir(tmp_path: Path) -> Path:
     from venda_de_put.models import IvPoint
 
-    now = datetime(2026, 8, 13, 16, 0, tzinfo=TZ)
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
     universe = {
         "PETR4": "Petróleo e Gás",
         "VALE3": "Mineração e Siderurgia",

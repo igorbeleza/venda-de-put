@@ -53,6 +53,8 @@ function cardHtml(kind, a, vencIso) {
         <dt>preço</dt><dd>${num(a.preco)}</dd>
         <dt>Boll Inf</dt><dd>${num(a.boll_inf)}</dd>
         <dt>IV/HV</dt><dd>${num(a.iv_hv)}</dd>
+        <dt>IV Rank</dt><dd>${num(a.iv_rank)}</dd>
+        <dt>IV Percentil</dt><dd>${num(a.iv_percentile)}</dd>
         <dt>vencimento</dt><dd>${venc}</dd>
       </dl></article>`;
   }
@@ -64,6 +66,8 @@ function cardHtml(kind, a, vencIso) {
       <dt>IFR</dt><dd>${num(a.ifr)}</dd>
       <dt>preço</dt><dd>${num(a.preco)}</dd>
       <dt>IV/HV</dt><dd>${num(a.iv_hv)}</dd>
+      <dt>IV Rank</dt><dd>${num(a.iv_rank)}</dd>
+      <dt>IV Percentil</dt><dd>${num(a.iv_percentile)}</dd>
       <dt>vencimento</dt><dd>${venc}</dd>
     </dl></article>`;
 }
@@ -148,10 +152,7 @@ const ATIVOS_BASE = [
   ["ticker", "ticker"], ["grupo", "grupo"], ["score_f", "ScoreF"],
   ["roe", "ROE"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "DY"],
   ["sinal", "SINAL"], ["ifr", "IFR"], ["score_c", "ScoreC"],
-];
-const ATIVOS_CALC = [
-  ["n_roe", "nROE"], ["n_pl", "nP/L"], ["n_pvp", "nP/VP"],
-  ["n_roe", "nROE"], ["score_c", "ScoreC"],
+  ["iv_rank", "IV Rank"], ["iv_percentile", "IV Percentil"],
 ];
 
 let ativosRows = [];

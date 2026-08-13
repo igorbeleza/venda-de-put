@@ -42,7 +42,7 @@ class FakeFund:
 
 
 def _petr_inputs():
-    now = datetime(2026, 8, 13, 16, 0, tzinfo=TZ)
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
     price = FakePrice({
         "PETR4": CandleSeries(
             ticker="PETR4",
@@ -75,6 +75,8 @@ def test_write_and_read_roundtrip(tmp_path: Path):
     back = read_snapshot(path)
     assert back.assets[0].ticker == "PETR4"
     assert back.assets[0].technicals.iv == 0.35
+    assert back.assets[0].technicals.iv_rank == 40
+    assert back.assets[0].technicals.iv_percentile == 0.55
 
 
 def test_run_scrape_uses_adapters_once():
@@ -93,6 +95,8 @@ def test_failed_source_keeps_previous_block(tmp_path: Path):
     assert iv2.calls == 1
     petr = next(a for a in second.assets if a.ticker == "PETR4")
     assert petr.technicals.iv == 0.35
+    assert petr.technicals.iv_rank == 40
+    assert petr.technicals.iv_percentile == 0.55
     stamp = next(s for s in second.stamps if s.source == "oplab")
     assert stamp.ok is False
     assert stamp.stale is True
@@ -120,3 +124,47 @@ def test_empty_yahoo_fetch_stamps_failed_and_reuses_previous():
     assert petr.technicals.preco == 41.75
     assert petr.technicals.mm200 == petr_first.technicals.mm200
     assert petr.technicals.ifr == petr_first.technicals.ifr
+
+
+def test_yahoo_half_tickers_stamps_failed_and_merges_previous():
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
+    universe = {"PETR4": "A", "VALE3": "B", "ITUB4": "C"}
+    series = {
+        t: CandleSeries(t, [30.0] * 210, 40.0, 45.0, 20.0, now)
+        for t in universe
+    }
+    first = run_scrape(
+        FakePrice(series),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(),
+        universe,
+        set(),
+        now,
+    )
+    second = run_scrape(
+        FakePrice({"PETR4": series["PETR4"]}),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(),
+        universe,
+        set(),
+        now,
+        previous=first,
+    )
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    vale = next(a for a in second.assets if a.ticker == "VALE3")
+    assert vale.technicals is not None
+    assert vale.technicals.preco == 40.0
+
+
+def test_fundamentus_not_fetched_at_1100_when_previous_exists():
+    price, iv, fund, universe, now16 = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now16)
+    assert fund.calls == 1
+    later = datetime(2026, 8, 15, 11, 0, tzinfo=TZ)
+    fund2 = FakeFund(fund.rows)
+    second = run_scrape(price, iv, fund2, AppConfig(), universe, set(), later, previous=first)
+    assert fund2.calls == 0
+    assert second.fundamentus_rows == first.fundamentus_rows

@@ -29,6 +29,11 @@ def test_auau3_cannot_have_mm200():
     assert sma([1.0] * 153, 200) is None
 
 
+def test_hv_log_n_lt_2_is_none():
+    assert hv_log([100.0, 101.0], 1) is None
+    assert hv_log([100.0], 0) is None
+
+
 def test_hv_and_range():
     closes = [100.0, 101.0, 100.0, 102.0] + [100.0] * 20
     hv = hv_log(closes, 21)

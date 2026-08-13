@@ -26,6 +26,8 @@ from venda_de_put.models import (
     TechnicalInput,
     Vencimento,
 )
+from venda_de_put.paths import data_dir as resolve_data_dir
+from venda_de_put.paths import snapshot_current, snapshot_history
 from venda_de_put.premium import premio_alvo
 from venda_de_put.scoring import apply_technical, build_lists, score_fundamentals
 from venda_de_put.snapshot import is_stale, read_snapshot, snapshot_to_dict, write_snapshot
@@ -118,6 +120,8 @@ def _enrich_asset(a: ScoredAsset, universe: dict[str, str], by_fund: dict[str, F
         "score_t": a.score_t,
         "score_c": a.score_c,
         "iv_hv": a.iv_hv,
+        "iv_rank": None if a.technicals is None else a.technicals.iv_rank,
+        "iv_percentile": None if a.technicals is None else a.technicals.iv_percentile,
         "technicals": tech,
         "preco": None if a.technicals is None else a.technicals.preco,
         "ifr": None if a.technicals is None else a.technicals.ifr,
@@ -181,25 +185,38 @@ def create_app(data_dir: Path) -> FastAPI:
     data_dir = Path(data_dir)
     app = FastAPI()
     app.state.data_dir = data_dir
-    app.state.snapshot_path = data_dir / "current.json"
-    if not app.state.snapshot_path.is_file() and (data_dir / "snapshots" / "current.json").is_file():
-        app.state.snapshot_path = data_dir / "snapshots" / "current.json"
+    app.state.snapshot_path = snapshot_current(data_dir)
     app.state.config_path = data_dir / "config.json"
     app.state.feriados_path = data_dir / "feriados.json"
     app.state.universe_path = data_dir / "universe.json"
-    app.state.history_dir = data_dir / "history"
+    app.state.history_dir = snapshot_history(data_dir)
     app.state.snapshot: Optional[Snapshot] = None
+    app.state.snapshot_mtime: Optional[float] = None
+
+    legacy = data_dir / "current.json"
+    if not app.state.snapshot_path.is_file() and legacy.is_file():
+        write_snapshot(
+            read_snapshot(legacy),
+            app.state.snapshot_path,
+            app.state.history_dir,
+            archive_if_1600=False,
+        )
 
     def get_snap() -> Snapshot:
-        if app.state.snapshot is None:
-            if not app.state.snapshot_path.is_file():
-                raise HTTPException(404, "snapshot ausente")
-            app.state.snapshot = read_snapshot(app.state.snapshot_path)
+        path = app.state.snapshot_path
+        if not path.is_file():
+            raise HTTPException(404, "snapshot ausente")
+        mtime = path.stat().st_mtime
+        if app.state.snapshot is None or app.state.snapshot_mtime != mtime:
+            app.state.snapshot = read_snapshot(path)
+            app.state.snapshot_mtime = mtime
         return app.state.snapshot
 
     def persist_snap(snap: Snapshot) -> None:
-        app.state.snapshot = snap
         write_snapshot(snap, app.state.snapshot_path, app.state.history_dir, archive_if_1600=False)
+        app.state.snapshot = snap
+        if app.state.snapshot_path.is_file():
+            app.state.snapshot_mtime = app.state.snapshot_path.stat().st_mtime
 
     @app.get("/api/dashboard")
     def dashboard(
@@ -291,17 +308,38 @@ def create_app(data_dir: Path) -> FastAPI:
 
     @app.put("/api/config")
     def put_config(body: dict):
+        if not isinstance(body, dict):
+            raise HTTPException(400, "objeto de config esperado")
+        required_num = {
+            "ifr_min": float,
+            "ifr_max": float,
+            "folga": float,
+            "meta_premio_30d": float,
+            "mm_periodos": int,
+            "ifr_periodos": int,
+            "boll_periodos": int,
+            "boll_desvios": float,
+            "hv_periodos": int,
+        }
+        parsed: dict[str, Any] = {}
+        for key, caster in required_num.items():
+            if key not in body:
+                raise HTTPException(400, f"campo obrigatório ausente: {key}")
+            try:
+                parsed[key] = caster(body[key])
+            except (TypeError, ValueError):
+                raise HTTPException(400, f"campo não numérico: {key}") from None
         cfg = AppConfig(
-            ifr_min=body.get("ifr_min", 10),
-            ifr_max=body.get("ifr_max", 50),
-            folga=body.get("folga", 0.05),
-            meta_premio_30d=body.get("meta_premio_30d", 0.0115),
-            mm_periodos=body.get("mm_periodos", 200),
+            ifr_min=parsed["ifr_min"],
+            ifr_max=parsed["ifr_max"],
+            folga=parsed["folga"],
+            meta_premio_30d=parsed["meta_premio_30d"],
+            mm_periodos=parsed["mm_periodos"],
             mm_tipo=body.get("mm_tipo", "sma"),
-            ifr_periodos=body.get("ifr_periodos", 14),
-            boll_periodos=body.get("boll_periodos", 20),
-            boll_desvios=body.get("boll_desvios", 2.0),
-            hv_periodos=body.get("hv_periodos", 21),
+            ifr_periodos=parsed["ifr_periodos"],
+            boll_periodos=parsed["boll_periodos"],
+            boll_desvios=parsed["boll_desvios"],
+            hv_periodos=parsed["hv_periodos"],
             scrape_times=tuple(body.get("scrape_times", ("11:00", "13:00", "16:00"))),
             fundamentus_days=tuple(body.get("fundamentus_days", (1, 15))),
             fundamentus_time=body.get("fundamentus_time", "07:00"),
@@ -337,6 +375,12 @@ def create_app(data_dir: Path) -> FastAPI:
         items = body.get("feriados") if isinstance(body, dict) and "feriados" in body else body
         if not isinstance(items, list):
             raise HTTPException(400, "lista de feriados esperada")
+        for item in items:
+            raw = item.get("date") if isinstance(item, dict) else item
+            try:
+                date.fromisoformat(str(raw)[:10])
+            except (TypeError, ValueError):
+                raise HTTPException(400, "feriado sem date parseável") from None
         app.state.feriados_path.write_text(
             json.dumps(items, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -367,6 +411,8 @@ def create_app(data_dir: Path) -> FastAPI:
         if not app.state.snapshot_path.is_file():
             raise HTTPException(404, "snapshot ausente")
         app.state.snapshot = read_snapshot(app.state.snapshot_path)
+        if app.state.snapshot_path.is_file():
+            app.state.snapshot_mtime = app.state.snapshot_path.stat().st_mtime
         snap = app.state.snapshot
         return {
             "generated_at": snap.generated_at.isoformat(),
@@ -377,19 +423,13 @@ def create_app(data_dir: Path) -> FastAPI:
     return app
 
 
-def cli_serve(host: str = "127.0.0.1", port: int = 8765) -> int:
-    import argparse
-
-    default_data = Path(__file__).resolve().parents[3] / "data"
-
-    p = argparse.ArgumentParser(prog="venda_de_put serve")
-    p.add_argument("--host", default=host)
-    p.add_argument("--port", type=int, default=port)
-    p.add_argument("--data-dir", type=Path, default=default_data)
-    args, _ = p.parse_known_args()
+def cli_serve(
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    data_dir: Path | str | None = None,
+) -> int:
     import uvicorn
 
-    data_dir = Path(args.data_dir)
-    app = create_app(data_dir)
-    uvicorn.run(app, host=args.host, port=args.port)
+    app = create_app(resolve_data_dir(data_dir))
+    uvicorn.run(app, host=host, port=port)
     return 0

@@ -58,6 +58,8 @@ class TechnicalInput:
     boll_inf: Optional[float]
     iv: Optional[float]
     hv: Optional[float]
+    iv_rank: Optional[float] = None
+    iv_percentile: Optional[float] = None
 
 
 @dataclass(frozen=True)

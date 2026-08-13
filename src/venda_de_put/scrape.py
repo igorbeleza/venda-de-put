@@ -18,14 +18,38 @@ from venda_de_put.models import (
     TechnicalInput,
 )
 from venda_de_put.scoring import apply_technical, build_lists, score_fundamentals
+from venda_de_put.paths import data_dir as resolve_data_dir
+from venda_de_put.paths import snapshot_current, snapshot_history
 from venda_de_put.snapshot import read_snapshot, write_snapshot
 from venda_de_put.sources.types import FundamentalsSource, IvSource, PriceSource
 from venda_de_put.tz import TZ
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
-CURRENT = DATA / "snapshots" / "current.json"
-HISTORY = DATA / "snapshots" / "history"
+
+def _around_hhmm(now: datetime, hhmm: str, window_min: int = 30) -> bool:
+    parts = str(hhmm).split(":")
+    h, m = int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+    target = now.replace(hour=h, minute=m, second=0, microsecond=0)
+    return abs((now - target).total_seconds()) <= window_min * 60
+
+
+def should_fetch_fundamentus(
+    now: datetime, cfg: AppConfig, previous: Snapshot | None
+) -> bool:
+    local = now.astimezone(TZ) if now.tzinfo else now.replace(tzinfo=TZ)
+    if local.day not in cfg.fundamentus_days:
+        return False
+    has_today = False
+    if previous is not None:
+        for s in previous.stamps:
+            if s.source != "fundamentus":
+                continue
+            collected = s.collected_at
+            if collected.tzinfo is None:
+                collected = collected.replace(tzinfo=TZ)
+            if collected.astimezone(TZ).date() == local.date():
+                has_today = True
+                break
+    return _around_hhmm(local, cfg.fundamentus_time) or not has_today
 
 
 def run_scrape(
@@ -46,14 +70,14 @@ def run_scrape(
         series = price.fetch(tickers)
         # YahooHttp swallows per-ticker failures and may return {}; treat zero
         # matches as a failed source so the stamp is not ok=True on total outage.
-        if not any(t in series for t in tickers):
-            series = {}
+        matched = sum(1 for t in tickers if t in series)
+        if not tickers or matched * 2 < len(tickers):
             stamps.append(
                 SourceStamp(
                     "yahoo",
                     now,
                     False,
-                    "no series for requested tickers",
+                    "fewer than half of requested tickers" if tickers else "no tickers",
                     True,
                 )
             )
@@ -70,19 +94,29 @@ def run_scrape(
         stamps.append(SourceStamp("oplab", now, False, str(e), True))
         if previous is not None:
             for a in previous.assets:
-                if a.technicals and a.technicals.iv is not None:
+                t = a.technicals
+                if t is not None and (
+                    t.iv is not None or t.iv_rank is not None or t.iv_percentile is not None
+                ):
                     iv_pts[a.ticker] = IvPoint(
-                        a.ticker, a.technicals.iv, None, None
+                        a.ticker, t.iv, t.iv_rank, t.iv_percentile
                     )
 
     fund_rows: list[Fundamentals] = []
-    try:
-        fund_rows = fundamentals.fetch()
-        stamps.append(SourceStamp("fundamentus", now, True, None, False))
-    except Exception as e:
-        stamps.append(SourceStamp("fundamentus", now, False, str(e), True))
+    if should_fetch_fundamentus(now, cfg, previous):
+        try:
+            fund_rows = fundamentals.fetch()
+            stamps.append(SourceStamp("fundamentus", now, True, None, False))
+        except Exception as e:
+            stamps.append(SourceStamp("fundamentus", now, False, str(e), True))
+            if previous is not None:
+                fund_rows = list(previous.fundamentus_rows)
+    else:
         if previous is not None:
             fund_rows = list(previous.fundamentus_rows)
+            prev_stamp = next((s for s in previous.stamps if s.source == "fundamentus"), None)
+            if prev_stamp is not None:
+                stamps.append(prev_stamp)
 
     by_ticker = {r.ticker: r for r in fund_rows}
     prev_tech = {}
@@ -130,7 +164,12 @@ def run_scrape(
             )
         else:
             mm200 = ifr = boll = hv = preco = None
-        iv_val = ivp.iv if ivp is not None else (prev.iv if prev is not None else None)
+        if ivp is not None:
+            iv_val, iv_rank, iv_pct = ivp.iv, ivp.iv_rank, ivp.iv_percentile
+        elif prev is not None:
+            iv_val, iv_rank, iv_pct = prev.iv, prev.iv_rank, prev.iv_percentile
+        else:
+            iv_val = iv_rank = iv_pct = None
         tech = TechnicalInput(
             preco=preco,
             mm200=mm200,
@@ -138,6 +177,8 @@ def run_scrape(
             boll_inf=boll,
             iv=iv_val,
             hv=hv,
+            iv_rank=iv_rank,
+            iv_percentile=iv_pct,
         )
         assets.append(apply_technical(fund, tech, cfg))
 
@@ -151,14 +192,20 @@ def run_scrape(
     )
 
 
-def cli_scrape() -> int:
-    cfg = load_config(DATA / "config.json")
-    universe = json.loads((DATA / "universe.json").read_text(encoding="utf-8"))
-    holidays = load_holidays(DATA / "feriados.json")
+def cli_scrape(data_dir: Path | str | None = None) -> int:
+    root = resolve_data_dir(data_dir)
+    current = snapshot_current(root)
+    history = snapshot_history(root)
+    cfg = load_config(root / "config.json")
+    universe = json.loads((root / "universe.json").read_text(encoding="utf-8"))
+    holidays = load_holidays(root / "feriados.json")
     now = datetime.now(TZ)
     previous: Optional[Snapshot] = None
-    if CURRENT.is_file():
-        previous = read_snapshot(CURRENT)
+    legacy = root / "current.json"
+    if current.is_file():
+        previous = read_snapshot(current)
+    elif legacy.is_file():
+        previous = read_snapshot(legacy)
     from venda_de_put.sources.fundamentus import FundamentusHttp
     from venda_de_put.sources.oplab import OplabHttp
     from venda_de_put.sources.yahoo import YahooHttp
@@ -173,5 +220,5 @@ def cli_scrape() -> int:
         now,
         previous=previous,
     )
-    write_snapshot(snap, CURRENT, HISTORY, archive_if_1600=True)
+    write_snapshot(snap, current, history, archive_if_1600=True)
     return 0

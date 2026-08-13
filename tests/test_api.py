@@ -54,7 +54,7 @@ def _fund(ticker: str, **kw) -> Fundamentals:
 
 @pytest.fixture
 def data_dir(tmp_path: Path) -> Path:
-    now = datetime(2026, 8, 13, 16, 0, tzinfo=TZ)
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
     universe = {
         "PETR4": "Petróleo e Gás",
         "VALE3": "Mineração e Siderurgia",
@@ -213,3 +213,53 @@ def test_ativos_roe_is_fundamentals_not_rank(data_dir):
     # seeded fixture: _fund("PETR4", pl=6.0, roe=0.22, ...)
     assert petr["roe"] == 0.22
     assert petr["pl"] == 6.0
+    assert petr["iv_rank"] == 40
+    assert petr["iv_percentile"] == 0.55
+    tech = petr.get("technicals") or {}
+    assert tech.get("iv_rank") == 40
+    assert tech.get("iv_percentile") == 0.55
+
+
+def test_config_put_rejects_missing_and_non_numeric(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    bad = client.put("/api/config", json={"ifr_max": 40})
+    assert bad.status_code == 400
+    cfg = client.get("/api/config").json()
+    cfg["ifr_min"] = "nope"
+    bad2 = client.put("/api/config", json=cfg)
+    assert bad2.status_code == 400
+
+
+def test_feriados_put_rejects_unparseable_date(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    r = client.put("/api/feriados", json=[{"date": "ontem", "descricao": "x"}])
+    assert r.status_code == 400
+
+
+def test_get_snap_reloads_when_mtime_changes(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    first = client.get("/api/ativos").json()["total"]
+    snap_path = data_dir / "snapshots" / "current.json"
+    from venda_de_put.snapshot import read_snapshot, write_snapshot
+    from venda_de_put.models import Snapshot
+
+    snap = read_snapshot(snap_path)
+    snap = Snapshot(
+        generated_at=snap.generated_at,
+        stamps=snap.stamps,
+        assets=[],
+        lists=snap.lists,
+        fundamentus_rows=snap.fundamentus_rows,
+    )
+    write_snapshot(snap, snap_path, data_dir / "snapshots" / "history", False)
+    import os
+    import time
+
+    now_ts = time.time() + 2
+    os.utime(snap_path, (now_ts, now_ts))
+    after = client.get("/api/ativos").json()
+    assert after["total"] == 0
+    assert first > 0

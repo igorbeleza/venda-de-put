@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -57,7 +57,8 @@ def _fund_score(d: dict) -> FundScore:
 def _technicals(d: dict | None) -> TechnicalInput | None:
     if d is None:
         return None
-    return TechnicalInput(**d)
+    allowed = {f.name for f in fields(TechnicalInput)}
+    return TechnicalInput(**{k: d[k] for k in allowed if k in d})
 
 
 def _scored(d: dict) -> ScoredAsset:

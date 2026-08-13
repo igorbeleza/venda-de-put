@@ -45,4 +45,4 @@ def test_history_copied_near_1600(tmp_path: Path):
     snap = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
     hist = tmp_path / "history"
     write_snapshot(snap, tmp_path / "current.json", hist, archive_if_1600=True)
-    assert (hist / "2026-08-13.json").is_file()
+    assert (hist / "2026-08-15.json").is_file()
