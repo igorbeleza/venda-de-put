@@ -1,0 +1,9 @@
+[Unit]
+Description=Scrape periódico venda de PUT
+
+[Service]
+Type=oneshot
+User=venda-de-put
+WorkingDirectory=/opt/venda-de-put
+Environment=VENDA_DE_PUT_DATA=/opt/venda-de-put/data
+ExecStart=/opt/venda-de-put/.venv/bin/python -m venda_de_put scrape

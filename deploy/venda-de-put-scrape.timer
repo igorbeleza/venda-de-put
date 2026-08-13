@@ -1,0 +1,12 @@
+[Unit]
+Description=Horários de scrape venda de PUT
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 11:00:00 America/Sao_Paulo
+OnCalendar=Mon..Fri *-*-* 13:00:00 America/Sao_Paulo
+OnCalendar=Mon..Fri *-*-* 16:00:00 America/Sao_Paulo
+OnCalendar=*-*-1,15 07:00:00 America/Sao_Paulo
+Persistent=true
+
+[Install]
+WantedBy=timers.target
