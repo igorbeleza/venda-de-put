@@ -106,7 +106,7 @@ def _enrich_asset(a: ScoredAsset, universe: dict[str, str], by_fund: dict[str, F
         "fund": fund,
         "score_f": a.fund.score_f,
         "pct_f": a.fund.pct_f,
-        "roe": a.fund.n_roe,  # ranks live under fund; raw roe from fundamentus
+        "roe": None if row is None else row.roe,
         "pl": None if row is None else row.pl,
         "pvp": None if row is None else row.pvp,
         "dy": None if row is None else row.dy,
@@ -245,6 +245,9 @@ def create_app(data_dir: Path) -> FastAPI:
                 for k in list(it.get("fund", {})):
                     if k.startswith("n_"):
                         it["fund"].pop(k, None)
+                for k in list(it):
+                    if k.startswith("n_"):
+                        it.pop(k, None)
         return {"ativos": items, "total": len(items)}
 
     @app.get("/api/dados")

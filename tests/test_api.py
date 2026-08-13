@@ -183,3 +183,33 @@ def test_app_py_does_not_import_scrape():
     text = src.read_text(encoding="utf-8")
     assert "run_scrape" not in text
     assert "venda_de_put.scrape" not in text
+
+
+def test_ativos_calculo0_strips_ranks_from_item_root(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    items = client.get("/api/ativos", params={"calculo": 0}).json()["ativos"]
+    assert items
+    for it in items:
+        assert "n_roe" not in it
+        assert "n_pl" not in it
+        assert "n_roe" not in it.get("fund", {})
+        assert "n_pl" not in it.get("fund", {})
+
+
+def test_ativos_calculo1_includes_n_roe(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    items = client.get("/api/ativos", params={"calculo": 1}).json()["ativos"]
+    assert items
+    assert any("n_roe" in it for it in items)
+
+
+def test_ativos_roe_is_fundamentals_not_rank(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    items = client.get("/api/ativos", params={"calculo": 0}).json()["ativos"]
+    petr = next(it for it in items if it["ticker"] == "PETR4")
+    # seeded fixture: _fund("PETR4", pl=6.0, roe=0.22, ...)
+    assert petr["roe"] == 0.22
+    assert petr["pl"] == 6.0
