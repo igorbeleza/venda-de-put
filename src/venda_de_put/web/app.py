@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from venda_de_put.calendar_b3 import (
     build_calendar,
@@ -349,6 +351,16 @@ def create_app(data_dir: Path) -> FastAPI:
         else:
             texto = _INSTRUCOES
         return {"texto": texto}
+
+    web_dir = Path(__file__).resolve().parent
+    static_dir = web_dir / "static"
+    templates_dir = web_dir / "templates"
+    if static_dir.is_dir():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/")
+    def home():
+        return FileResponse(templates_dir / "index.html")
 
     @app.post("/api/refresh")
     def refresh():

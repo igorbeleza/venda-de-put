@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Venda de PUT</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">Venda de PUT</div>
+    <nav>
+      <a class="nav-item active" href="#dashboard">Venda de PUT</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="dashboard">Dashboard</button>
+      <button type="button" class="tab" data-tab="ativos">Ativos</button>
+      <button type="button" class="tab" data-tab="dados">Dados</button>
+      <button type="button" class="tab" data-tab="setores">Setores</button>
+      <button type="button" class="tab" data-tab="config">Config</button>
+      <button type="button" class="tab" data-tab="vencimentos">Vencimentos</button>
+      <button type="button" class="tab" data-tab="feriados">Feriados</button>
+      <button type="button" class="tab" data-tab="instrucoes">Instruções</button>
+    </header>
+    <section id="pane-dashboard" class="pane active">
+      <div class="toolbar">
+        <label>Vencimento
+          <select id="vencimento"></select>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="so-mensais" checked>
+          Só mensais
+        </label>
+        <span id="carimbo">Atualizado em —</span>
+        <span id="badge-stale" class="badge hidden">dado velho</span>
+        <button type="button" id="btn-atualizar">Atualizar</button>
+        <span id="premio-alvo"></span>
+      </div>
+      <div class="lists">
+        <article class="list-block">
+          <h2>① Fundamentalista</h2>
+          <p class="narrative">Essa lista não é sobre achar a ação que vai 'bombar'. É sobre achar a empresa que eu aceitaria carregar mesmo se ela caísse amanhã. A gente compara cada ação com as outras do mesmo setor — banco com banco, varejo com varejo, elétrica com elétrica — olhando rentabilidade, dívida e se o preço não está esticado. O resultado é: essas são as empresas com o fundamento mais sólido pra virem à put. Se eu for exercido em alguma delas, eu compro empresa boa, não sobra.</p>
+          <div id="cards-fundamentalista" class="cards"></div>
+        </article>
+        <article class="list-block">
+          <h2>② Técnico</h2>
+          <p class="narrative">Aqui a pergunta muda: não é 'essa empresa é boa', é 'agora é a hora'. A gente só entra vendendo put quando duas coisas acontecem ao mesmo tempo: a ação está numa tendência de alta de verdade (não é ilusão de curto prazo), e ela deu uma respirada — um recuo saudável que deixa o prêmio mais gordo. Se só tiver o recuo sem a tendência de alta, cara, isso não é oportunidade, é faca caindo. Por isso a coluna de sinal só acende quando os dois REALMENTE se encontram.</p>
+          <div id="cards-tecnico" class="cards"></div>
+        </article>
+        <article class="list-block">
+          <h2>③ Combinado</h2>
+          <p class="narrative">Essa é a lista que eu realmente usa. É a interseção das outras duas: empresa que eu aceitaria carregar de olhos fechados e que está no momento certo de entrada agora. Fundamento decide o quê; técnico decide quando. Reparem que às vezes essa lista vem com menos de 10 nomes — e tá certo assim. Proteção que gera lucro não é sobre ter sempre uma operação pra fazer, é sobre só entrar quando as duas pontas se alinham.</p>
+          <div id="cards-combinado" class="cards"></div>
+        </article>
+      </div>
+    </section>
+    <section id="pane-ativos" class="pane" hidden></section>
+    <section id="pane-dados" class="pane" hidden></section>
+    <section id="pane-setores" class="pane" hidden></section>
+    <section id="pane-config" class="pane" hidden></section>
+    <section id="pane-vencimentos" class="pane" hidden></section>
+    <section id="pane-feriados" class="pane" hidden></section>
+    <section id="pane-instrucoes" class="pane" hidden></section>
+    <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo.</footer>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
