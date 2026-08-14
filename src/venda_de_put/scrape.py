@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import date, datetime
 from pathlib import Path
+import time
 from typing import Optional
 
 from venda_de_put.calendar_b3 import load_holidays
@@ -13,6 +14,7 @@ from venda_de_put.models import (
     AssetInput,
     Fundamentals,
     IvPoint,
+    PutQuote,
     Snapshot,
     SourceStamp,
     TechnicalInput,
@@ -21,7 +23,8 @@ from venda_de_put.scoring import apply_technical, build_lists, score_fundamental
 from venda_de_put.paths import data_dir as resolve_data_dir
 from venda_de_put.paths import snapshot_current, snapshot_history
 from venda_de_put.snapshot import read_snapshot, write_snapshot
-from venda_de_put.sources.types import FundamentalsSource, IvSource, PriceSource
+from venda_de_put.sources.types import ChainSource, FundamentalsSource, IvSource, PriceSource
+from venda_de_put.strike import recommended_tickers
 from venda_de_put.tz import TZ
 
 
@@ -62,6 +65,8 @@ def run_scrape(
     holidays: set[date],
     now: datetime,
     previous: Snapshot | None = None,
+    chain_source: ChainSource | None = None,
+    chain_pause: float = 0.0,
 ) -> Snapshot:
     tickers = list(universe.keys())
     stamps: list[SourceStamp] = []
@@ -184,13 +189,61 @@ def run_scrape(
         assets.append(apply_technical(fund, tech, cfg))
 
     lists = build_lists(assets)
+    prev_chains: dict[str, list[PutQuote]] = {}
+    if previous is not None:
+        prev_chains = dict(previous.chains)
+    chains = _fetch_chains(
+        chain_source,
+        recommended_tickers(lists),
+        prev_chains,
+        stamps,
+        now,
+        chain_pause,
+    )
     return Snapshot(
         generated_at=now,
         stamps=stamps,
         assets=assets,
         lists=lists,
         fundamentus_rows=fund_rows,
+        chains=chains,
     )
+
+
+def _fetch_chains(
+    chain_source: ChainSource | None,
+    tickers: list[str],
+    previous: dict[str, list[PutQuote]],
+    stamps: list[SourceStamp],
+    now: datetime,
+    pause: float,
+) -> dict[str, list[PutQuote]]:
+    if chain_source is None:
+        return previous
+    out: dict[str, list[PutQuote]] = dict(previous)
+    failed: list[str] = []
+    ok_n = 0
+    for i, ticker in enumerate(tickers):
+        if i and pause > 0:
+            time.sleep(pause)
+        try:
+            out[ticker] = chain_source.fetch_chain(ticker)
+            ok_n += 1
+        except Exception:
+            failed.append(ticker)
+            if ticker not in out and ticker in previous:
+                out[ticker] = previous[ticker]
+    if tickers:
+        stamps.append(
+            SourceStamp(
+                "oplab_cadeia",
+                now,
+                ok_n > 0,
+                None if not failed else "falha: " + ",".join(failed),
+                ok_n == 0,
+            )
+        )
+    return out
 
 
 def cli_scrape(data_dir: Path | str | None = None) -> int:
@@ -211,15 +264,18 @@ def cli_scrape(data_dir: Path | str | None = None) -> int:
     from venda_de_put.sources.oplab import OplabHttp
     from venda_de_put.sources.yahoo import YahooHttp
 
+    oplab = OplabHttp()
     snap = run_scrape(
         YahooHttp(),
-        OplabHttp(),
+        oplab,
         FundamentusHttp(),
         cfg,
         universe,
         holidays,
         now,
         previous=previous,
+        chain_source=oplab,
+        chain_pause=0.35,
     )
     write_snapshot(snap, current, history, archive_if_1600=True)
     return 0

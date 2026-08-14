@@ -4,11 +4,57 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Venda de PUT</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css?v=bui13">
+  <script>
+    (function () {
+      var t, z = 1;
+      try { t = localStorage.getItem("vdp-theme"); } catch (e) { t = null; }
+      if (t !== "light" && t !== "dark") {
+        t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      try {
+        var raw = parseFloat(localStorage.getItem("vdp-zoom"));
+        if (raw === 1 || (raw >= 0.8 && raw <= 1.6)) z = raw;
+      } catch (e) { z = 1; }
+      document.documentElement.setAttribute("data-theme", t);
+      document.documentElement.style.colorScheme = t;
+      document.documentElement.style.setProperty("--ui-zoom", String(z));
+      document.documentElement.style.zoom = "";
+    })();
+  </script>
 </head>
 <body>
+  <div class="shell">
   <aside class="sidebar">
-    <div class="brand">Venda de PUT</div>
+    <div class="sidebar-top">
+      <span class="brand-mark">VP</span>
+    <div class="theme-switch" role="group" aria-label="Tema">
+      <button type="button" class="theme-btn" data-theme-set="light" aria-label="Tema claro" title="Claro">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+        </svg>
+      </button>
+      <button type="button" class="theme-btn" data-theme-set="dark" aria-label="Tema escuro" title="Escuro">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/>
+        </svg>
+      </button>
+    </div>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">Venda de PUT</div>
+      <div class="brand-sub">Seleção B3</div>
+    </div>
+    <div class="zoom-switch" role="group" aria-label="Zoom da tela">
+      <button type="button" id="zoom-out" aria-label="Diminuir zoom" title="Diminuir">−</button>
+      <button type="button" id="zoom-reset" aria-label="Zoom 100%">100%</button>
+      <button type="button" id="zoom-in" aria-label="Aumentar zoom" title="Aumentar">+</button>
+    </div>
+    <p class="nav-label">Telas</p>
     <nav>
       <a class="nav-item active" href="#dashboard">Venda de PUT</a>
     </nav>
@@ -36,22 +82,41 @@
         <span id="carimbo">Atualizado em —</span>
         <span id="badge-stale" class="badge hidden">dado velho</span>
         <button type="button" id="btn-atualizar">Atualizar</button>
-        <span id="premio-alvo"></span>
+      </div>
+      <div class="premio-tape" aria-live="polite">
+        <div class="tape-cell">
+          <div class="tape-lbl">Meta de prêmio p/ 30 dias</div>
+          <div class="tape-val" id="meta-30d">—</div>
+        </div>
+        <div class="tape-cell">
+          <div class="tape-lbl">Dias até o vencimento (corridos)</div>
+          <div class="tape-val" id="dias-corridos">—</div>
+        </div>
+        <div class="tape-cell destaque">
+          <div class="tape-lbl">Prêmio-alvo para esse vencimento</div>
+          <div class="tape-val" id="premio-alvo">—</div>
+        </div>
       </div>
       <div class="lists">
         <article class="list-block">
-          <h2>① Fundamentalista</h2>
+          <div class="list-banner">
+          <h2><span class="sec-idx">01</span> Fundamentalista</h2>
           <p class="narrative">Essa lista não é sobre achar a ação que vai 'bombar'. É sobre achar a empresa que eu aceitaria carregar mesmo se ela caísse amanhã. A gente compara cada ação com as outras do mesmo setor — banco com banco, varejo com varejo, elétrica com elétrica — olhando rentabilidade, dívida e se o preço não está esticado. O resultado é: essas são as empresas com o fundamento mais sólido pra virem à put. Se eu for exercido em alguma delas, eu compro empresa boa, não sobra.</p>
+          </div>
           <div id="cards-fundamentalista" class="cards"></div>
         </article>
         <article class="list-block">
-          <h2>② Técnico</h2>
+          <div class="list-banner">
+          <h2><span class="sec-idx">02</span> Técnico</h2>
           <p class="narrative">Aqui a pergunta muda: não é 'essa empresa é boa', é 'agora é a hora'. A gente só entra vendendo put quando duas coisas acontecem ao mesmo tempo: a ação está numa tendência de alta de verdade (não é ilusão de curto prazo), e ela deu uma respirada — um recuo saudável que deixa o prêmio mais gordo. Se só tiver o recuo sem a tendência de alta, cara, isso não é oportunidade, é faca caindo. Por isso a coluna de sinal só acende quando os dois REALMENTE se encontram.</p>
+          </div>
           <div id="cards-tecnico" class="cards"></div>
         </article>
         <article class="list-block">
-          <h2>③ Combinado</h2>
+          <div class="list-banner">
+          <h2><span class="sec-idx">03</span> Combinado</h2>
           <p class="narrative">Essa é a lista que eu realmente usa. É a interseção das outras duas: empresa que eu aceitaria carregar de olhos fechados e que está no momento certo de entrada agora. Fundamento decide o quê; técnico decide quando. Reparem que às vezes essa lista vem com menos de 10 nomes — e tá certo assim. Proteção que gera lucro não é sobre ter sempre uma operação pra fazer, é sobre só entrar quando as duas pontas se alinham.</p>
+          </div>
           <div id="cards-combinado" class="cards"></div>
         </article>
       </div>
@@ -77,10 +142,22 @@
     </section>
     <section id="pane-config" class="pane" hidden>
       <form id="form-config" class="config-form">
+        <div class="calc-premio">
+          <h3>Calculadora de prêmio-alvo por vencimento</h3>
+          <p class="calc-help">Os mesmos três campos da planilha. O último é fórmula: Meta 30d × √(dias / 30).</p>
+          <label>Meta de prêmio p/ 30 dias
+            <input class="edit" id="calc-meta-30d" name="meta_premio_30d" type="number" step="any">
+          </label>
+          <label>Dias até o vencimento (corridos)
+            <input class="edit" id="calc-dias" type="number" step="1">
+          </label>
+          <label>Prêmio-alvo para esse vencimento
+            <output id="calc-alvo" class="calc-out">—</output>
+          </label>
+        </div>
         <label>IFR mín <input class="edit" name="ifr_min" type="number" step="any"></label>
         <label>IFR máx <input class="edit" name="ifr_max" type="number" step="any"></label>
         <label>Folga <input class="edit" name="folga" type="number" step="any"></label>
-        <label>Meta prêmio 30d <input class="edit" name="meta_premio_30d" type="number" step="any"></label>
         <label>MM períodos <input class="edit" name="mm_periodos" type="number"></label>
         <label>MM tipo <input class="edit" name="mm_tipo" type="text"></label>
         <label>IFR períodos <input class="edit" name="ifr_periodos" type="number"></label>
@@ -98,7 +175,18 @@
     </section>
     <section id="pane-feriados" class="pane" hidden>
       <div class="toolbar">
-        <label>Data <input type="date" id="feriado-data"></label>
+        <label class="date-combo-label">Data
+          <span class="date-combo">
+            <input type="text" id="feriado-data" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off">
+            <input type="date" id="feriado-data-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+            <button type="button" id="feriado-data-cal" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+            </button>
+          </span>
+        </label>
         <label>Descrição <input type="text" id="feriado-desc"></label>
         <button type="button" id="btn-add-feriado">Adicionar</button>
       </div>
@@ -109,6 +197,7 @@
     </section>
     <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo.</footer>
   </div>
-  <script src="/static/app.js"></script>
+  </div>
+  <script src="/static/app.js?v=bui13"></script>
 </body>
 </html>

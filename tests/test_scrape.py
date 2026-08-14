@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from venda_de_put.config import AppConfig
-from venda_de_put.models import CandleSeries, Fundamentals, IvPoint
+from venda_de_put.models import CandleSeries, Fundamentals, IvPoint, PutQuote
 from venda_de_put.scrape import run_scrape
 from venda_de_put.snapshot import read_snapshot, write_snapshot
 from venda_de_put.tz import TZ
@@ -168,6 +168,54 @@ def test_fundamentus_not_fetched_at_1100_when_previous_exists():
     second = run_scrape(price, iv, fund2, AppConfig(), universe, set(), later, previous=first)
     assert fund2.calls == 0
     assert second.fundamentus_rows == first.fundamentus_rows
+
+
+class FakeChain:
+    def __init__(self, data, fail=None):
+        self.data = data
+        self.fail = set(fail or [])
+        self.calls: list[str] = []
+
+    def fetch_chain(self, ticker: str):
+        self.calls.append(ticker)
+        if ticker in self.fail:
+            raise RuntimeError("cadeia down")
+        return list(self.data.get(ticker, []))
+
+
+def test_scrape_guarda_cadeia_dos_recomendados_e_sobrevive_roundtrip(tmp_path: Path):
+    price, iv, fund, universe, now = _petr_inputs()
+    puts = [
+        PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0),
+    ]
+    chain = FakeChain({"PETR4": puts})
+    snap = run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), now, chain_source=chain
+    )
+    assert chain.calls == ["PETR4"]
+    assert snap.chains["PETR4"][0].bid == 0.28
+    path = tmp_path / "current.json"
+    write_snapshot(snap, path, tmp_path / "history", archive_if_1600=False)
+    back = read_snapshot(path)
+    assert back.chains["PETR4"][0].strike == 40.86
+    assert back.chains["PETR4"][0].due_date == date(2026, 8, 21)
+
+
+def test_scrape_cadeia_falha_mantem_anterior():
+    price, iv, fund, universe, now = _petr_inputs()
+    puts = [PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 10.0)]
+    first = run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), now,
+        chain_source=FakeChain({"PETR4": puts}),
+    )
+    second = run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), now,
+        previous=first,
+        chain_source=FakeChain({}, fail={"PETR4"}),
+    )
+    assert second.chains["PETR4"][0].bid == 0.28
+    stamp = next(s for s in second.stamps if s.source == "oplab_cadeia")
+    assert stamp.ok is False
 
 
 def test_fundamentus_fetched_on_first_scrape_when_no_previous():

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from venda_de_put.sources.fundamentus import parse_fundamentus_html
-from venda_de_put.sources.oplab import parse_oplab_next_data
+from venda_de_put.sources.oplab import parse_oplab_chain, parse_oplab_next_data
 from venda_de_put.sources.yahoo import parse_yahoo_chart
 
 FIXTURES = Path("tests/fixtures")
@@ -43,6 +43,33 @@ def test_oplab_sem_next_data_falha_alto():
         parse_oplab_next_data("<html></html>")
 
 
+def test_oplab_chain_usa_put_bid_nunca_bs_bid():
+    from datetime import date
+
+    html = Path("tests/fixtures/oplab_chain_petr4.html").read_text(encoding="utf-8")
+    puts = parse_oplab_chain(html, today=date(2026, 8, 13))
+    first = next(p for p in puts if p.strike == 40.86)
+    assert first.bid == 0.28
+    assert first.bid != 0.92
+    assert first.delta == -0.266
+    assert first.poe == 0.279
+    assert first.due_date == date(2026, 8, 21)
+    assert all(p.due_date.year != 2027 for p in puts)
+
+
+def test_oplab_chain_poe_em_percentual_vira_fracao():
+    from datetime import date
+
+    html = (
+        '<script id="__NEXT_DATA__">{"props":{"pageProps":{"series":['
+        '{"due_date":"2026-08-21","strikes":[{"strike":10,'
+        '"put":{"bid":0.2,"ask":0.3,"volume":1,"bs":{"delta":-0.2,"poe":27.9}}}]}'
+        ']}}}</script>'
+    )
+    puts = parse_oplab_chain(html, today=date(2026, 8, 13))
+    assert puts[0].poe == pytest.approx(0.279)
+
+
 def test_fundamentus_iso8859_and_position():
     raw = Path("tests/fixtures/fundamentus.html").read_bytes()
     # Fixture is iso-8859-1 on disk (or UTF-8 that we re-encode); parser always gets iso-8859-1.
@@ -57,3 +84,11 @@ def test_fundamentus_iso8859_and_position():
     petr = next(r for r in rows if r.ticker == "PETR4")
     assert petr.pl is not None
     assert petr.cresc_rec_5a is not None
+    # "10,00%" no HTML → fração 0.10 (convenção do app). Sem isso a UI
+    # faz ×100 e o pt-BR mostra 1.000% em vez de 10,00%.
+    assert petr.dy == pytest.approx(0.10)
+    assert petr.roe == pytest.approx(0.22)
+    assert petr.roic == pytest.approx(0.15)
+    assert petr.mrg_liq == pytest.approx(0.20)
+    assert petr.cresc_rec_5a == pytest.approx(-2.0815)
+    assert petr.pl == pytest.approx(6.0)

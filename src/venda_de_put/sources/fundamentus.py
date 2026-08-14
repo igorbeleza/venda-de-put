@@ -35,6 +35,17 @@ _FIELD_ORDER = (
     "cresc_rec_5a",
 )
 
+# Colunas que o site publica com "%". O app guarda fração (17,72% → 0.1772).
+PCT_FIELDS = frozenset({
+    "dy",
+    "mrg_bruta",
+    "mrg_ebit",
+    "mrg_liq",
+    "roic",
+    "roe",
+    "cresc_rec_5a",
+})
+
 
 def parse_pt_br_number(text: str) -> Optional[float]:
     s = (text or "").strip()
@@ -66,6 +77,8 @@ def parse_fundamentus_html(raw: bytes) -> list[Fundamentals]:
         nums = [parse_pt_br_number(t) for t in texts[1:]]
         kwargs = {"ticker": papel}
         for name, val in zip(_FIELD_ORDER[1:], nums):
+            if name in PCT_FIELDS and val is not None:
+                val = val / 100.0
             kwargs[name] = val
         rows.append(Fundamentals(**kwargs))
     return rows

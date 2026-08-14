@@ -7,13 +7,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from venda_de_put.config import AppConfig, save_config
-from venda_de_put.models import CandleSeries, Fundamentals, IvPoint
+from datetime import date
+
+from venda_de_put.models import CandleSeries, Fundamentals, IvPoint, PutQuote
 from venda_de_put.scrape import run_scrape
 from venda_de_put.snapshot import write_snapshot
 from venda_de_put.tz import TZ
 from venda_de_put.web.app import create_app, label_vencimento
 from venda_de_put.models import Vencimento
-from datetime import date
 
 
 class FakePrice:
@@ -30,6 +31,14 @@ class FakeIv:
 
     def fetch(self) -> dict[str, IvPoint]:
         return self.pts
+
+
+class FakeChain:
+    def __init__(self, data):
+        self.data = data
+
+    def fetch_chain(self, ticker: str):
+        return list(self.data.get(ticker, []))
 
 
 class FakeFund:
@@ -80,7 +89,22 @@ def data_dir(tmp_path: Path) -> Path:
         _fund("VALE3", pl=7.0, roe=0.19, ev_ebitda=4.5),
         _fund("ITUB4", pl=9.0, roe=0.16, ev_ebitda=None),
     ])
-    snap = run_scrape(price, iv, fund, AppConfig(), universe, holidays=set(), now=now)
+    chains = {
+        "PETR4": [
+            PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0),
+            PutQuote(date(2026, 9, 18), 39.86, 0.54, 0.58, -0.24, 0.26, 80.0),
+        ],
+        "VALE3": [
+            PutQuote(date(2026, 8, 21), 60.0, 0.10, 0.14, -0.20, 0.22, 5.0),
+        ],
+        "ITUB4": [
+            PutQuote(date(2026, 8, 21), 33.0, 0.05, 0.08, -0.18, 0.20, 4.0),
+        ],
+    }
+    snap = run_scrape(
+        price, iv, fund, AppConfig(), universe, holidays=set(), now=now,
+        chain_source=FakeChain(chains),
+    )
     write_snapshot(snap, tmp_path / "current.json", tmp_path / "history", archive_if_1600=False)
     save_config(AppConfig(), tmp_path / "config.json")
     (tmp_path / "universe.json").write_text(
@@ -103,6 +127,25 @@ def test_refresh_does_not_scrape(data_dir, monkeypatch):
     r = c.post("/api/refresh")
     assert r.status_code == 200
     assert "coletado" in r.text.lower() or "generated_at" in r.json() or "stamps" in r.json()
+
+
+def test_dashboard_anexa_strike_e_metas(data_dir):
+    app = create_app(data_dir=data_dir)
+    c = TestClient(app)
+    payload = c.get("/api/dashboard", params={"vencimento": "2026-08-21", "so_mensais": 1}).json()
+    assert payload["meta_premio_30d"] == 0.0115
+    assert payload["vencimento"]["dias_corridos"] == 8
+    assert abs(payload["premio_alvo"] - (0.0115 * (8 / 30) ** 0.5)) < 1e-9
+    rows = (
+        payload["listas"]["fundamentalista"]
+        + payload["listas"]["tecnico"]
+        + payload["listas"]["combinado"]
+    )
+    petr = next(a for a in rows if a["ticker"] == "PETR4")
+    assert petr["strike"] == 40.86
+    assert petr["premio_bid"] == 0.28
+    assert petr["strike_status"] == "ok"
+    assert petr["preco"] == 41.75
 
 
 def test_trocar_vencimento_nao_reordena(data_dir):

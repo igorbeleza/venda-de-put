@@ -13,11 +13,13 @@ from venda_de_put.models import (
     FundScore,
     Fundamentals,
     Lists,
+    PutQuote,
     ScoredAsset,
     Snapshot,
     SourceStamp,
     TechnicalInput,
 )
+from venda_de_put.sources.fundamentus import PCT_FIELDS
 from venda_de_put.tz import TZ
 
 
@@ -85,8 +87,31 @@ def _stamp(d: dict) -> SourceStamp:
     )
 
 
-def _fundamentals(d: dict) -> Fundamentals:
-    return Fundamentals(**d)
+def _fundamentals(d: dict, *, as_points: bool) -> Fundamentals:
+    data = dict(d)
+    if as_points:
+        for k in PCT_FIELDS:
+            if data.get(k) is not None:
+                data[k] = data[k] / 100.0
+    return Fundamentals(**data)
+
+
+def _put_quote(d: dict) -> PutQuote:
+    due = d["due_date"]
+    if isinstance(due, str):
+        due = date.fromisoformat(due[:10])
+    poe = d.get("poe")
+    if poe is not None and poe > 1:
+        poe = poe / 100.0
+    return PutQuote(
+        due_date=due,
+        strike=float(d["strike"]),
+        bid=d.get("bid"),
+        ask=d.get("ask"),
+        delta=d.get("delta"),
+        poe=poe,
+        volume=d.get("volume"),
+    )
 
 
 def snapshot_to_dict(snap: Snapshot) -> dict:
@@ -95,6 +120,11 @@ def snapshot_to_dict(snap: Snapshot) -> dict:
 
 def snapshot_from_dict(data: dict) -> Snapshot:
     lists = data["lists"]
+    raw_chains = data.get("chains") or {}
+    chains = {
+        ticker: [_put_quote(p) for p in (puts or [])]
+        for ticker, puts in raw_chains.items()
+    }
     return Snapshot(
         generated_at=_parse_dt(data["generated_at"]),
         stamps=[_stamp(s) for s in data.get("stamps", [])],
@@ -104,7 +134,12 @@ def snapshot_from_dict(data: dict) -> Snapshot:
             tecnico=[_scored(a) for a in lists.get("tecnico", [])],
             combinado=[_scored(a) for a in lists.get("combinado", [])],
         ),
-        fundamentus_rows=[_fundamentals(r) for r in data.get("fundamentus_rows", [])],
+        fundamentus_rows=[
+            _fundamentals(r, as_points=data.get("fundamentus_unit") != "fraction")
+            for r in data.get("fundamentus_rows", [])
+        ],
+        chains=chains,
+        fundamentus_unit="fraction",
     )
 
 

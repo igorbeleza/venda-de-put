@@ -140,3 +140,37 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "mostrar" in js.lower() or "calculo" in js
     assert "ifr_max" in js
     assert "RTD" not in js
+    assert "Preço atual" in js
+    assert "Meta venc." in js
+    assert "Vencimento" in js
+    assert "Distância" in js
+    assert "premio_bid" in js
+    assert "strike" in js
+    assert "meta_premio_30d" in js
+    assert "Calculadora de prêmio-alvo" in html
+    assert "GRUPO_ABREV" in js
+    assert "Utilities (Energia/Saneamento)" in js
+    assert "tbl-dados" in js
+    assert "tbl-setores" in js
+    assert "nextSort" in js
+    assert 'dir: 0' in js or "dir = 0" in js
+    assert "aria-sort" in js
+    assert "sort-asc" in css
+    assert "sort-desc" in css
+    assert "sort-ind" in css
+    assert "colTitle" in js
+    assert '["ticker", "ticker"]' in js
+    assert "nROE" in js
+    assert "tbl-vencimentos" in js
+    assert "tbl-feriados" in js
+    assert "vencLabel(raw)" in js
+    assert "row-mensal" in js
+    assert "chip-mensal" in js
+    assert "row-mensal" in css
+    assert 'placeholder="dd/mm/aaaa"' in html
+    assert 'id="feriado-data"' in html
+    assert 'type="date"' not in html.split('id="feriado-data"')[1][:80]
+    assert "function parseBrDate" in js
+    assert "function maskBrDate" in js
+    assert "feriado-data-cal" in html
+    assert "showPicker" in js

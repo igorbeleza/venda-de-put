@@ -30,6 +30,7 @@ from venda_de_put.paths import data_dir as resolve_data_dir
 from venda_de_put.paths import snapshot_current, snapshot_history
 from venda_de_put.premium import premio_alvo
 from venda_de_put.scoring import apply_technical, build_lists, score_fundamentals
+from venda_de_put.strike import select_strike
 from venda_de_put.snapshot import is_stale, read_snapshot, snapshot_to_dict, write_snapshot
 from venda_de_put.tz import TZ
 
@@ -131,6 +132,19 @@ def _enrich_asset(a: ScoredAsset, universe: dict[str, str], by_fund: dict[str, F
     }
 
 
+def _strike_fields(pick) -> dict:
+    return {
+        "strike": pick.strike,
+        "premio_bid": pick.bid,
+        "premio_bid_pct": pick.bid_pct,
+        "premio_ask": pick.ask,
+        "distancia_pct": pick.distancia_pct,
+        "delta": pick.delta,
+        "poe": pick.poe,
+        "strike_status": pick.status,
+    }
+
+
 def _stamp_out(s) -> dict:
     return {
         "source": s.source,
@@ -178,6 +192,7 @@ def _recalc(snap: Snapshot, cfg: AppConfig, universe: dict[str, str]) -> Snapsho
         assets=assets,
         lists=lists,
         fundamentus_rows=snap.fundamentus_rows,
+        chains=snap.chains,
     )
 
 
@@ -232,14 +247,26 @@ def create_app(data_dir: Path) -> FastAPI:
         v = _pick_vencimento(rows, vencimento, bool(so_mensais))
         premio = premio_alvo(cfg.meta_premio_30d, v.dias_corridos)
         stale = is_stale(snap.stamps, datetime.now(TZ), cfg, holidays)
+        def with_strike(a):
+            row = _enrich_asset(a, universe, by_fund)
+            pick = select_strike(
+                snap.chains.get(a.ticker, []),
+                v.efetivo,
+                row.get("preco"),
+                premio,
+            )
+            row.update(_strike_fields(pick))
+            return row
+
         listas = {
-            "fundamentalista": [_enrich_asset(a, universe, by_fund) for a in snap.lists.fundamentalista],
-            "tecnico": [_enrich_asset(a, universe, by_fund) for a in snap.lists.tecnico],
-            "combinado": [_enrich_asset(a, universe, by_fund) for a in snap.lists.combinado],
+            "fundamentalista": [with_strike(a) for a in snap.lists.fundamentalista],
+            "tecnico": [with_strike(a) for a in snap.lists.tecnico],
+            "combinado": [with_strike(a) for a in snap.lists.combinado],
         }
         return {
             "listas": listas,
             "premio_alvo": premio,
+            "meta_premio_30d": cfg.meta_premio_30d,
             "vencimento": {
                 "efetivo": v.efetivo.isoformat(),
                 "nominal": v.nominal.isoformat(),

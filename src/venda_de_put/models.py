@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional
 
@@ -153,9 +153,37 @@ class Fundamentals:
 
 
 @dataclass(frozen=True)
+class PutQuote:
+    due_date: date
+    strike: float
+    bid: Optional[float]
+    ask: Optional[float]
+    delta: Optional[float]
+    poe: Optional[float]
+    volume: Optional[float]
+
+
+@dataclass(frozen=True)
+class StrikePick:
+    status: str  # ok | abaixo_da_meta | sem_serie | sem_liquidez
+    due_date: date
+    strike: Optional[float]
+    bid: Optional[float]
+    bid_pct: Optional[float]
+    ask: Optional[float]
+    distancia_pct: Optional[float]
+    delta: Optional[float]
+    poe: Optional[float]
+    volume: Optional[float]
+
+
+@dataclass(frozen=True)
 class Snapshot:
     generated_at: datetime
     stamps: list[SourceStamp]
     assets: list[ScoredAsset]
     lists: Lists
     fundamentus_rows: list[Fundamentals]
+    chains: dict[str, list[PutQuote]] = field(default_factory=dict)
+    # "fraction" = DY/ROE/margens já em 0.1772. Ausente no JSON antigo = pontos (17.72).
+    fundamentus_unit: str = "fraction"
