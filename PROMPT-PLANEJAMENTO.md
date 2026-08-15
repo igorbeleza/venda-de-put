@@ -257,7 +257,7 @@ O Profit entregava tudo pronto; agora é você que calcula. Torne cada parâmetr
 | Indicador | Cálculo | Assumido |
 |---|---|---|
 | **MM200** | Média móvel **simples** do fechamento, 200 períodos | O código RTD era `3`; o período é certo, o tipo (simples/exponencial) não. Assumir simples, deixar configurável |
-| **IFR (14)** | RSI de Wilder, 14 períodos, com suavização de Wilder (não média simples) | Padrão do Profit |
+| **IFR (14)** | RSI de Wilder, 14 períodos, com suavização de Wilder (não média simples) | Equivale ao IFR **Clássico** do Profit, não ao **Simples**. Detalhe e checagem ITUB4 em `PROMPT-DASHBOARD.md` §6.6 |
 | **Bollinger** | SMA(20) ± 2 desvios-padrão. Usar a **banda inferior** | O Profit mandava as 3 linhas numa célula só e o Excel isolava a menor por `MIN()`. Período/desvio não são recuperáveis do arquivo — 20/2 é o padrão do Profit. Deixar configurável |
 | **HV** | Desvio-padrão dos log-retornos de **21 dias úteis**, anualizado (× √252) | Janela curta de propósito: para vender put de 30-50 dias importa a movimentação recente, não a de 1 ano. O OpLab publica "Desvio Padrão (1a)" mas prefira calcular, para ter controle da janela |
 | **IV** | Ler do OpLab: `IV (1a)`, `IV Rank`, `IV Percentil` | |

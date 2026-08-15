@@ -311,12 +311,19 @@ O Profit entregava pronto. Agora o código calcula. Cada período/desvio é conf
 | Indicador | Cálculo | Nota |
 |---|---|---|
 | MM200 | SMA 200 do fechamento | RTD usava código `3`; tipo SMA assumido, configurável |
-| IFR (14) | RSI de Wilder, 14, suavização de Wilder | não média simples |
+| IFR (14) | RSI de Wilder, 14, suavização de Wilder | **Clássico**, não o IFR Simples do Profit. Ver nota abaixo. |
 | Bollinger | SMA(20) ± 2σ; usar a **banda inferior** | 20/2 é o padrão Profit, não está no arquivo |
 | HV | σ dos log-retornos de **21 dias úteis**, × √252 | janela curta de propósito (put 30–50d) |
 | IV / IV Rank / IV Percentil | OpLab `iv_current`, `iv_1y_rank`, `iv_1y_percentile` | |
 | IV/HV | IV ÷ HV | > 1 = prêmio gordo; **destaque IV Rank/Percentil** — comparam o ativo consigo mesmo |
 | Máx/mín 52s | do `meta` Yahoo | coluna nova: posição no range `(p − mín)/(máx − mín)` em % |
+
+**IFR × Profit.** O Profit tem dois tipos no indicador IFR (RSI) 14 — [documentação Nelogica](https://ajuda.nelogica.com.br/hc/pt-br/articles/360040975932-IFR-%C3%8Dndice-de-For%C3%A7a-Relativa). Os dois usam `IFR = 100 − 100/(1+FR)` e mudam só o FR:
+
+- **Simples** — `FR = média(var. positivas) / média(var. negativas)` nos últimos 14 deltas. Sem memória (RSI de Cutler / SMA).
+- **Clássico** — “média das médias”: `X = (média_anterior × 13 + variação_atual) / 14` em ganhos e perdas. É o RSI de Wilder.
+
+Este app implementa o **Clássico** (`rsi_wilder` em `indicators.py`). A planilha Excel original não calculava IFR: lia o RTD do Profit no tipo que estivesse no gráfico. Comparar o IFR daqui com o **Simples** do Profit é erro de método (no ITUB4, 14/08/2026 fechamento 39,00: Simples Profit 24,49 vs Clássico Profit 29,85 vs Clássico daqui 34,92). Mesmo no Clássico o nível pode divergir ~5 pp — a série de fechamentos do gráfico Profit não é idêntica à do Yahoo/COTAHIST.
 
 Indicador impossível (histórico curto, IV ausente): texto **“sem dado”**, visível. Nunca 0, nunca célula muda.
 

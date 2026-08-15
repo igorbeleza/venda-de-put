@@ -586,6 +586,13 @@ Expected: FAIL — módulo ausente.
 
 RSI Wilder: primeira média de ganhos/perdas = média simples dos 14 primeiros deltas; depois `avg = (avg * (n-1) + delta) / n`. Se `avg_loss == 0` e `avg_gain > 0` → 100. Se ambos 0 → `None`.
 
+**IFR × Profit.** O Profit tem dois tipos no indicador IFR (RSI) 14 — [documentação Nelogica](https://ajuda.nelogica.com.br/hc/pt-br/articles/360040975932-IFR-%C3%8Dndice-de-For%C3%A7a-Relativa). Os dois usam `IFR = 100 − 100/(1+FR)` e mudam só o FR:
+
+- **Simples** — `FR = média(var. positivas) / média(var. negativas)` nos últimos 14 deltas. Sem memória (RSI de Cutler / SMA).
+- **Clássico** — “média das médias”: `X = (média_anterior × 13 + variação_atual) / 14` em ganhos e perdas. É o RSI de Wilder.
+
+Este plano implementa o **Clássico** (`rsi_wilder`). A planilha Excel original não calculava IFR: lia o RTD do Profit no tipo que estivesse no gráfico. Comparar o IFR daqui com o **Simples** do Profit é erro de método (no ITUB4, 14/08/2026 fechamento 39,00: Simples Profit 24,49 vs Clássico Profit 29,85 vs Clássico daqui 34,92). Mesmo no Clássico o nível pode divergir ~5 pp — a série de fechamentos do gráfico Profit não é idêntica à do Yahoo/COTAHIST. Autoridade de produto: `PROMPT-DASHBOARD.md` §6.6.
+
 HV: ignorar pares com `None` ou `<= 0`; precisa de `n` retornos válidos.
 
 Null no meio da série: pular o ponto (não interpolar como zero). SMA/RSI/Bollinger usam só valores não-`None`, **na ordem**, e exigem `n` pontos válidos no final da série (janela dos últimos `n` válidos, não “últimos `n` slots com buraco”).

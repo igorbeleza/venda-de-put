@@ -4,7 +4,7 @@ Ferramenta de seleção para venda de put coberta por critério próprio.
 
 ## Timing de entrada
 
-- IFR (RSI Wilder) entre **10** e **50**
+- IFR (RSI clássico / Wilder, 14 períodos — não a média simples da janela) entre **10** e **50**
 - Preço na ou abaixo da banda inferior de Bollinger, com folga configurável
 - Tendência: preço acima da média móvel de 200 períodos
 
