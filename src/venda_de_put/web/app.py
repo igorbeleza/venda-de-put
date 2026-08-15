@@ -121,6 +121,8 @@ def _enrich_asset(a: ScoredAsset, universe: dict[str, str], by_fund: dict[str, F
         "score_t": a.score_t,
         "score_c": a.score_c,
         "iv_hv": a.iv_hv,
+        "iv": None if a.technicals is None else a.technicals.iv,
+        "hv": None if a.technicals is None else a.technicals.hv,
         "iv_rank": None if a.technicals is None else a.technicals.iv_rank,
         "iv_percentile": None if a.technicals is None else a.technicals.iv_percentile,
         "technicals": tech,

@@ -258,9 +258,13 @@ def test_ativos_roe_is_fundamentals_not_rank(data_dir):
     assert petr["pl"] == 6.0
     assert petr["iv_rank"] == 40
     assert petr["iv_percentile"] == 0.55
+    assert petr["iv"] == 0.35
+    assert petr["hv"] is not None
     tech = petr.get("technicals") or {}
     assert tech.get("iv_rank") == 40
     assert tech.get("iv_percentile") == 0.55
+    assert tech.get("iv") == 0.35
+    assert tech.get("hv") == petr["hv"]
 
 
 def test_config_put_rejects_missing_and_non_numeric(data_dir):

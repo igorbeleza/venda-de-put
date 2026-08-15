@@ -251,6 +251,7 @@ const ATIVOS_BASE = [
   ["ticker", "ticker"], ["grupo", "grupo"], ["score_f", "ScoreF"],
   ["roe", "ROE"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "DY"],
   ["sinal", "SINAL"], ["ifr", "IFR"], ["score_c", "ScoreC"],
+  ["iv", "IV"], ["hv", "HV"], ["iv_hv", "IV/HV"],
   ["iv_rank", "IV Rank"], ["iv_percentile", "IV Percentil"],
 ];
 
@@ -301,7 +302,16 @@ function nextSort(state, key) {
 function cellVal(row, key) {
   if (row[key] !== undefined && row[key] !== null) return row[key];
   if (row.fund && row.fund[key] !== undefined) return row.fund[key];
+  if (row.technicals && row.technicals[key] !== undefined) return row.technicals[key];
   return null;
+}
+
+function volPct(v) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return "sem dado";
+  const n = Number(v);
+  // OpLab manda IV em pontos (22,83); HV e fixtures de teste vêm em fração (0,23).
+  if (Math.abs(n) > 1.5) return fmtNum.format(n) + "%";
+  return num(n, "pct");
 }
 
 function sortRows(rows, sort) {
@@ -396,6 +406,7 @@ function renderAtivos() {
     fmt(key, raw) {
       if (raw == null || raw === "") return "sem dado";
       if (key === "roe" || key === "dy") return num(raw, "pct");
+      if (key === "iv" || key === "hv") return volPct(raw);
       if (typeof raw === "number") return num(raw);
       return semDado(raw);
     },

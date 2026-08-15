@@ -136,6 +136,10 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "#FFF7D6" in css
     js = client.get("/static/app.js").text
     assert "/api/ativos" in js
+    assert '["iv", "IV"]' in js
+    assert '["hv", "HV"]' in js
+    assert '["iv_hv", "IV/HV"]' in js
+    assert js.index('["iv", "IV"]') < js.index('["hv", "HV"]')
     assert "/api/config" in js
     assert "mostrar" in js.lower() or "calculo" in js
     assert "ifr_max" in js
