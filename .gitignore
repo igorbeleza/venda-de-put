@@ -12,7 +12,18 @@ build/
 .superpowers/
 .idea/
 .vscode/
+.claude/
+.grok/
 *.log
+.DS_Store
+Thumbs.db
+
+# Segredos e ambiente (nunca versionar)
+.env
+.env.*
+*.pem
+htpasswd
+**/htpasswd
 
 # Snapshot gerado pelo scrape (não versionar cotação)
 data/snapshots/current.json
