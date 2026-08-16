@@ -136,10 +136,17 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "#FFF7D6" in css
     js = client.get("/static/app.js").text
     assert "/api/ativos" in js
+    assert '["mm200", "MM200"]' in js
+    assert '["ifr", "IFR"]' in js
+    assert '["boll_inf", "Boll Inf"]' in js
+    assert js.index('["mm200", "MM200"]') < js.index('["ifr", "IFR"]')
+    assert js.index('["ifr", "IFR"]') < js.index('["boll_inf", "Boll Inf"]')
     assert '["iv", "IV"]' in js
     assert '["hv", "HV"]' in js
     assert '["iv_hv", "IV/HV"]' in js
     assert js.index('["iv", "IV"]') < js.index('["hv", "HV"]')
+    assert '["iv_rank", "IV Rank"]' not in js
+    assert '["iv_percentile", "IV Percentil"]' not in js
     assert "/api/config" in js
     assert "mostrar" in js.lower() or "calculo" in js
     assert "ifr_max" in js
@@ -149,6 +156,8 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "Vencimento" in js
     assert "Distância" in js
     assert "premio_bid" in js
+    assert "option_symbol" in js
+    assert "Prêmio (últ.)" in js
     assert "strike" in js
     assert "meta_premio_30d" in js
     assert "Calculadora de prêmio-alvo" in html

@@ -30,23 +30,37 @@ def _empty(status: str, due_date: date) -> StrikePick:
         delta=None,
         poe=None,
         volume=None,
+        last=None,
+        last_pct=None,
+        symbol=None,
     )
 
 
+def _premio_pct(put: PutQuote) -> Optional[float]:
+    if put.last is None or put.last <= 0 or put.strike <= 0:
+        return None
+    if put.volume is None or put.volume <= 0:
+        return None
+    return put.last / put.strike
+
+
 def _pick(put: PutQuote, status: str, spot: float) -> StrikePick:
-    bid_pct = None if put.bid is None or put.strike <= 0 else put.bid / put.strike
+    last_pct = _premio_pct(put)
     dist = None if spot <= 0 else (spot - put.strike) / spot
     return StrikePick(
         status=status,
         due_date=put.due_date,
         strike=put.strike,
         bid=put.bid,
-        bid_pct=bid_pct,
+        bid_pct=last_pct,
         ask=put.ask,
         distancia_pct=dist,
         delta=put.delta,
         poe=put.poe,
         volume=put.volume,
+        last=put.last,
+        last_pct=last_pct,
+        symbol=put.symbol,
     )
 
 
@@ -60,8 +74,8 @@ def select_strike(
     if not series or spot is None or spot <= 0:
         return _empty("sem_serie", due_date)
 
-    with_bid = [p for p in series if p.bid is not None and p.bid > 0]
-    if not with_bid:
+    with_last = [p for p in series if _premio_pct(p) is not None]
+    if not with_last:
         return _empty("sem_liquidez", due_date)
 
     def otm_ok_delta(p: PutQuote) -> bool:
@@ -71,14 +85,14 @@ def select_strike(
             return False
         return True
 
-    candidates = [p for p in with_bid if otm_ok_delta(p)]
+    candidates = [p for p in with_last if otm_ok_delta(p)]
     if not candidates:
         return _empty("sem_liquidez", due_date)
 
-    meeting = [p for p in candidates if p.strike > 0 and (p.bid / p.strike) >= premio_alvo]
+    meeting = [p for p in candidates if _premio_pct(p) >= premio_alvo]
     if meeting:
         chosen = min(meeting, key=lambda p: p.strike)
         return _pick(chosen, "ok", spot)
 
-    best = max(candidates, key=lambda p: p.bid / p.strike if p.strike > 0 else -1.0)
+    best = max(candidates, key=lambda p: _premio_pct(p) or -1.0)
     return _pick(best, "abaixo_da_meta", spot)

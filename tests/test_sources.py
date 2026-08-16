@@ -51,6 +51,8 @@ def test_oplab_chain_usa_put_bid_nunca_bs_bid():
     first = next(p for p in puts if p.strike == 40.86)
     assert first.bid == 0.28
     assert first.bid != 0.92
+    assert first.last == 0.28
+    assert first.symbol == "PETRX406"
     assert first.delta == -0.266
     assert first.poe == 0.279
     assert first.due_date == date(2026, 8, 21)

@@ -87,17 +87,22 @@ function strikeStatus(st, vencIso) {
 
 function opsBlock(a, vencIso, meta30, alvo) {
   const venc = vencLabel(vencIso);
-  const bid = a.premio_bid == null
+  const premio = a.premio_bid == null
     ? "sem dado"
     : (a.premio_bid_pct == null
       ? num(a.premio_bid)
       : `${num(a.premio_bid)}<small>${num(a.premio_bid_pct, "pct")}</small>`);
   const hasStrike = a.strike != null;
+  const strikeLbl = hasStrike
+    ? (a.option_symbol
+      ? `${num(a.strike)}<small>${a.option_symbol}</small>`
+      : num(a.strike))
+    : "sem dado";
   return `
     <div class="card-ops">
       <div class="op hl-ops"><span>Preço atual</span><b>${num(a.preco)}</b></div>
-      <div class="op hl-ops"><span>Strike</span><b>${hasStrike ? num(a.strike) : "sem dado"}</b></div>
-      <div class="op hl-ops"><span>Prêmio (bid)</span><b>${bid}</b></div>
+      <div class="op hl-ops"><span>Strike</span><b>${strikeLbl}</b></div>
+      <div class="op hl-ops"><span>Prêmio (últ.)</span><b>${premio}</b></div>
     </div>
     <div class="card-strip">
       <div class="m30"><span>Meta 30 dias</span><b>${num(meta30, "pct")}</b></div>
@@ -250,9 +255,9 @@ document.querySelectorAll(".tab").forEach((btn) => {
 const ATIVOS_BASE = [
   ["ticker", "ticker"], ["grupo", "grupo"], ["score_f", "ScoreF"],
   ["roe", "ROE"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "DY"],
-  ["sinal", "SINAL"], ["ifr", "IFR"], ["score_c", "ScoreC"],
+  ["sinal", "SINAL"], ["mm200", "MM200"], ["ifr", "IFR"], ["boll_inf", "Boll Inf"],
+  ["score_c", "ScoreC"],
   ["iv", "IV"], ["hv", "HV"], ["iv_hv", "IV/HV"],
-  ["iv_rank", "IV Rank"], ["iv_percentile", "IV Percentil"],
 ];
 
 const DADOS_COLS = [

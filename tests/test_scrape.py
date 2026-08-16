@@ -186,7 +186,7 @@ class FakeChain:
 def test_scrape_guarda_cadeia_dos_recomendados_e_sobrevive_roundtrip(tmp_path: Path):
     price, iv, fund, universe, now = _petr_inputs()
     puts = [
-        PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0),
+        PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0, 0.28, "PETRX406"),
     ]
     chain = FakeChain({"PETR4": puts})
     snap = run_scrape(
@@ -199,11 +199,13 @@ def test_scrape_guarda_cadeia_dos_recomendados_e_sobrevive_roundtrip(tmp_path: P
     back = read_snapshot(path)
     assert back.chains["PETR4"][0].strike == 40.86
     assert back.chains["PETR4"][0].due_date == date(2026, 8, 21)
+    assert back.chains["PETR4"][0].last == 0.28
+    assert back.chains["PETR4"][0].symbol == "PETRX406"
 
 
 def test_scrape_cadeia_falha_mantem_anterior():
     price, iv, fund, universe, now = _petr_inputs()
-    puts = [PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 10.0)]
+    puts = [PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 10.0, 0.28, "PETRX406")]
     first = run_scrape(
         price, iv, fund, AppConfig(), universe, set(), now,
         chain_source=FakeChain({"PETR4": puts}),

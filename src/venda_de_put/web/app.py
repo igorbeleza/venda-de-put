@@ -137,9 +137,10 @@ def _enrich_asset(a: ScoredAsset, universe: dict[str, str], by_fund: dict[str, F
 def _strike_fields(pick) -> dict:
     return {
         "strike": pick.strike,
-        "premio_bid": pick.bid,
-        "premio_bid_pct": pick.bid_pct,
+        "premio_bid": pick.last,
+        "premio_bid_pct": pick.last_pct,
         "premio_ask": pick.ask,
+        "option_symbol": pick.symbol,
         "distancia_pct": pick.distancia_pct,
         "delta": pick.delta,
         "poe": pick.poe,

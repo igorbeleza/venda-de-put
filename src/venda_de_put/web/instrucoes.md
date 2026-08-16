@@ -8,9 +8,15 @@ Ferramenta de seleção para venda de put coberta por critério próprio.
 - Preço na ou abaixo da banda inferior de Bollinger, com folga configurável
 - Tendência: preço acima da média móvel de 200 períodos
 
+## Prazo
+
+As vendas de put são abertas com **45 a 21 dias corridos** até o vencimento.
+
 ## Prêmio
 
 O prêmio-alvo escala a meta de 30 dias pela raiz do prazo até o vencimento.
+
+No vencimento escolhido, o prêmio da put é **último preço negociado / strike**. A entrada usa o **menor strike OTM** (mais distante do à vista) em que essa taxa seja **pelo menos** a meta do vencimento — maior segurança que ainda bate a meta. Só entra strike com último e volume no dia; último sem negócio é cotação velha.
 
 ## Dados
 

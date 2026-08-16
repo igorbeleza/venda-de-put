@@ -259,7 +259,7 @@ O Profit entregava tudo pronto; agora é você que calcula. Torne cada parâmetr
 | **MM200** | Média móvel **simples** do fechamento, 200 períodos | O código RTD era `3`; o período é certo, o tipo (simples/exponencial) não. Assumir simples, deixar configurável |
 | **IFR (14)** | RSI de Wilder, 14 períodos, com suavização de Wilder (não média simples) | Equivale ao IFR **Clássico** do Profit, não ao **Simples**. Detalhe e checagem ITUB4 em `PROMPT-DASHBOARD.md` §6.6 |
 | **Bollinger** | SMA(20) ± 2 desvios-padrão. Usar a **banda inferior** | O Profit mandava as 3 linhas numa célula só e o Excel isolava a menor por `MIN()`. Período/desvio não são recuperáveis do arquivo — 20/2 é o padrão do Profit. Deixar configurável |
-| **HV** | Desvio-padrão dos log-retornos de **21 dias úteis**, anualizado (× √252) | Janela curta de propósito: para vender put de 30-50 dias importa a movimentação recente, não a de 1 ano. O OpLab publica "Desvio Padrão (1a)" mas prefira calcular, para ter controle da janela |
+| **HV** | Desvio-padrão dos log-retornos de **21 dias úteis**, anualizado (× √252) | Janela curta de propósito: a put abre com 45–21 dias corridos, então importa a movimentação recente, não a de 1 ano. O OpLab publica "Desvio Padrão (1a)" mas prefira calcular, para ter controle da janela |
 | **IV** | Ler do OpLab: `IV (1a)`, `IV Rank`, `IV Percentil` | |
 | **IV/HV** | `IV ÷ HV`. Acima de 1 = prêmio gordo, favorável a vender | Manter por continuidade com o Excel, **mas destacar IV Rank e IV Percentil** — dizem se o prêmio está caro em relação ao histórico do próprio ativo, que é a pergunta certa |
 | **Máx/mín 52 semanas** | Do OHLC. Exibir como **posição no range**: `(preço − mín) / (máx − mín)` em % | Coluna nova, não existia no Excel. Um número comparável entre ativos: vender put com o ativo a 15% do range é situação bem diferente de vender a 85% |
@@ -295,6 +295,8 @@ Novidade em relação ao Excel — é o que transforma a ferramenta de "lista de
 ### 7.1 Vencimento — seletor, não regra automática
 
 O vencimento **não é fixo nem inferido**: é escolhido pelo usuário num seletor no topo do Dashboard. Trocar a seleção muda `dias_corridos`, o que muda o prêmio-alvo, o que muda o strike de cada recomendação. A tabela se atualiza na hora.
+
+**Janela de abertura da operação:** as vendas de put são abertas com **45 a 21 dias corridos** até o vencimento (inclusive). Fora dessa faixa o seletor ainda serve para consulta; não é a janela em que a operação é aberta. Ver `PROMPT-DASHBOARD.md` §6.7.
 
 **Padrão ao abrir:** o próximo mensal. Um parâmetro em `Config` define o comportamento do padrão:
 
@@ -334,14 +336,14 @@ Na cadeia do OpLab:
 
 1. Filtrar: `Tipo = PUT`, vencimento = **o selecionado**, `Strike < preço à vista` (somente OTM)
 2. Descartar `Delta` pior que **−0,45** (piso rígido)
-3. `prêmio = Bid` — é o que se recebe de fato vendendo a mercado. Mid é otimista; Último pode ser de horas atrás numa série ilíquida. Exibir Mid e Ask ao lado, como referência
-4. `prêmio_% = Bid / Strike`
-5. Escolher o **strike mais distante do preço** (menor strike) cujo `prêmio_% >= prêmio_alvo_%`
+3. `prêmio = último preço negociado` (`put.close` no OpLab). Bid/ask ficam no livro; **nunca** `put.bs.bid` (é a call do mesmo strike)
+4. `prêmio_% = último / strike`
+5. Escolher o **strike mais distante do preço** (menor strike) cujo `prêmio_% >= prêmio_alvo_%` — a meta do vencimento com a maior segurança possível. Exemplo BRAV3 18/09/2026, meta 1,21%: BRAVU162 16,13 último 0,19 = 1,17% (não entra); BRAVU165 16,38 último 0,22 = 1,34% (primeiro que satisfaz)
 6. Se nenhum atingir a meta: mostrar o de maior `prêmio_%` **marcado como "abaixo da meta"**. Nunca esconder o ativo — sumir com ele faz o usuário achar que não há dado
 7. Se o ativo **não tem série** naquele vencimento (acontece com semanais — `RAIZ4` não tem nenhuma), mostrar `sem série em dd/MM/yyyy` na linha. Mesmo princípio do passo 6: a linha continua na tela, explicando o vazio
-8. Se tem série mas **nenhuma put com `bid > 0`**, mostrar `série sem liquidez`. É estado diferente do passo 7 e o usuário precisa distinguir
+8. Se tem série mas **nenhuma put com `último > 0` e volume no dia**, mostrar `série sem liquidez`. Último sem negócio (volume 0) é cotação velha e não entra. É estado diferente do passo 7 e o usuário precisa distinguir
 
-Cada recomendação exibe: **ativo, vencimento (dd/MM/yyyy), strike, prêmio (bid), prêmio %, distância do preço %, delta, probabilidade de exercício, IV Rank**.
+Cada recomendação exibe: **ativo, vencimento (dd/MM/yyyy), strike, código da opção, prêmio (último), prêmio %, distância do preço %, delta, probabilidade de exercício, IV Rank**.
 
 Sem os pisos dos passos 2 e 5, o critério "maior prêmio que bate a meta" empurra naturalmente para puts quase no dinheiro em ativo volátil — exatamente o oposto do que se quer.
 
@@ -469,9 +471,9 @@ props.pageProps.series[]    35 vencimentos, cada um:
 | 41,11 | **0,08** | 0,72 | 0,72 |
 | 42,86 | **1,10** | 0,03 | 0,03 |
 
-Usar `bs.bid` como prêmio faria **toda** put OTM parecer bater a meta com folga — 0,92 em vez de 0,04 — e o motor escolheria sempre o strike mais distante. Número plausível, resultado catastroficamente errado. **Use `put.bid` de primeiro nível. Sempre.**
+Usar `bs.bid` como prêmio faria **toda** put OTM parecer bater a meta com folga — 0,92 em vez de 0,04 — e o motor escolheria sempre o strike mais distante. Número plausível, resultado catastroficamente errado. **Nunca use `bs.bid`/`bs.ask`.** Bid/ask de primeiro nível (`put.bid`) são o livro. A taxa de entrada da seção 7 é `put.close` / strike, e só com volume no dia — último sem negócio é cotação velha (ex.: BRAVU122 a 0,27).
 
-⚠️ **Armadilha menor**: `bs.premium` e `bs.price` são o **`close` (último negócio)**, não o bid — confirmado em 141/141 casos. É exatamente o valor que a seção 7 rejeita por ser otimista e potencialmente velho. Ignore os dois.
+⚠️ **`bs.premium` e `bs.price` coincidem com `put.close`** (confirmado em 141/141 casos). Podem servir de conferência do último; a fonte canônica do motor é `put.close`. Sem volume no dia, ignore o último mesmo que `bs.premium` esteja preenchido.
 
 Nota: `bs.delta`, `bs.poe` e `bs.moneyness` **são da put** (delta negativo, `poe` crescendo com o strike). A contaminação é só em `bid`/`ask`.
 
@@ -501,9 +503,9 @@ Dois sinais adicionais para identificar o mensal, ambos observados:
 
 ### 11.5 Sanidade do motor de strike com dado real
 
-Rodando a lógica da seção 7 sobre `PETR4` no mensal de 21/08 (spot 41,75, 8 dias corridos → prêmio-alvo = 1,15% × √(8/30) = **0,59%**), o strike escolhido seria **40,86** — 2,13% abaixo do preço, `bid` 0,28 (0,69%), delta −0,266, prob. de exercício 27,9%, "Boa liquidez". Resultado coerente: OTM, delta bem acima do piso de −0,45, prêmio batendo a meta.
+Rodando a lógica da seção 7 sobre `PETR4` no mensal de 21/08 (spot 41,75, 8 dias corridos → prêmio-alvo = 1,15% × √(8/30) = **0,59%**), o strike escolhido seria **40,86** — 2,13% abaixo do preço, último/`bid` 0,28 (0,69%), delta −0,266, prob. de exercício 27,9%, "Boa liquidez". Resultado coerente: OTM, delta bem acima do piso de −0,45, prêmio batendo a meta. A medição abaixo foi feita quando o motor ainda lia `bid`; a regra vigente é último/strike com volume (seção 7.3). Exemplo canônico atual: BRAV3 18/09/2026, meta 1,21% → BRAVU165 16,38 último 0,22 = 1,34%.
 
-⚠️ **O que o dado levantou, e como ficou resolvido.** O prêmio de 0,28 é `bid` **por ação** — R$ 28,00 por contrato de 100. Batendo os três mensais mais próximos, o de 21/08 é pior nos dois eixos ao mesmo tempo:
+⚠️ **O que o dado levantou, e como ficou resolvido.** O prêmio de 0,28 é **por ação** — R$ 28,00 por contrato de 100. Batendo os três mensais mais próximos, o de 21/08 é pior nos dois eixos ao mesmo tempo:
 
 | Vencimento | Dias corridos | Strike | Prêmio/ação | Por contrato | % do strike | Distância do preço | Caixa travado/contrato |
 |---|---|---|---|---|---|---|---|
@@ -538,7 +540,7 @@ Fora do mensal e da semana corrente, o livro é vazio. Em ativos menores é pior
 
 **④ O seletor não custa uma requisição.** O JSON da cadeia já traz **todas** as séries de uma vez — não há endpoint por vencimento. Ou seja, trocar de 21/08 para 18/09 é recálculo puro sobre o snapshot em cache, sem rede. Isso encaixa perfeitamente com a regra "botão Atualizar nunca raspa" (seção 2).
 
-⚠️ **Mas o snapshot precisa guardar todas as séries** — se você salvar só o vencimento escolhido, trocar o seletor obriga a raspar de novo e a regra acima se perde. Como o JSON cru é enorme (a amostra de 9 ativos baixou **23 MB**; `VALE3` sozinho, 4,9 MB), **não guarde o cru**: no momento da extração, fique só com as PUTs e só com os campos usados — `due_date`, `strike`, `bid`, `ask`, `bs.delta`, `bs.poe`, `volume` — e corte séries acima de ~120 dias corridos, que não interessam a esta operação. Isso derruba o snapshot de megabytes para dezenas de kilobytes por ativo, e é o que torna o seletor instantâneo.
+⚠️ **Mas o snapshot precisa guardar todas as séries** — se você salvar só o vencimento escolhido, trocar o seletor obriga a raspar de novo e a regra acima se perde. Como o JSON cru é enorme (a amostra de 9 ativos baixou **23 MB**; `VALE3` sozinho, 4,9 MB), **não guarde o cru**: no momento da extração, fique só com as PUTs e só com os campos usados — `due_date`, `strike`, `bid`, `ask`, `last` (`put.close`), `symbol`, `bs.delta`, `bs.poe`, `volume` — e corte séries acima de ~120 dias corridos, que não interessam a esta operação. Isso derruba o snapshot de megabytes para dezenas de kilobytes por ativo, e é o que torna o seletor instantâneo.
 
 ---
 

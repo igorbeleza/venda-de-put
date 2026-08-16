@@ -91,14 +91,14 @@ def data_dir(tmp_path: Path) -> Path:
     ])
     chains = {
         "PETR4": [
-            PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0),
-            PutQuote(date(2026, 9, 18), 39.86, 0.54, 0.58, -0.24, 0.26, 80.0),
+            PutQuote(date(2026, 8, 21), 40.86, 0.28, 0.32, -0.266, 0.279, 120.0, 0.28, "PETRX406"),
+            PutQuote(date(2026, 9, 18), 39.86, 0.54, 0.58, -0.24, 0.26, 80.0, 0.54, "PETRU398"),
         ],
         "VALE3": [
-            PutQuote(date(2026, 8, 21), 60.0, 0.10, 0.14, -0.20, 0.22, 5.0),
+            PutQuote(date(2026, 8, 21), 60.0, 0.10, 0.14, -0.20, 0.22, 5.0, 0.10),
         ],
         "ITUB4": [
-            PutQuote(date(2026, 8, 21), 33.0, 0.05, 0.08, -0.18, 0.20, 4.0),
+            PutQuote(date(2026, 8, 21), 33.0, 0.05, 0.08, -0.18, 0.20, 4.0, 0.05),
         ],
     }
     snap = run_scrape(
@@ -134,8 +134,9 @@ def test_dashboard_anexa_strike_e_metas(data_dir):
     c = TestClient(app)
     payload = c.get("/api/dashboard", params={"vencimento": "2026-08-21", "so_mensais": 1}).json()
     assert payload["meta_premio_30d"] == 0.0115
-    assert payload["vencimento"]["dias_corridos"] == 8
-    assert abs(payload["premio_alvo"] - (0.0115 * (8 / 30) ** 0.5)) < 1e-9
+    dias = (date(2026, 8, 21) - datetime.now(TZ).date()).days
+    assert payload["vencimento"]["dias_corridos"] == dias
+    assert abs(payload["premio_alvo"] - (0.0115 * (dias / 30) ** 0.5)) < 1e-9
     rows = (
         payload["listas"]["fundamentalista"]
         + payload["listas"]["tecnico"]
@@ -144,6 +145,7 @@ def test_dashboard_anexa_strike_e_metas(data_dir):
     petr = next(a for a in rows if a["ticker"] == "PETR4")
     assert petr["strike"] == 40.86
     assert petr["premio_bid"] == 0.28
+    assert petr["option_symbol"] == "PETRX406"
     assert petr["strike_status"] == "ok"
     assert petr["preco"] == 41.75
 

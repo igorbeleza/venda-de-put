@@ -452,6 +452,10 @@ git commit -m "feat: calendário B3 e mensal pela janela dia 15–21"
 - Consumes: `meta_30d: float`, `dias_corridos: int`
 - Produces: `premio_alvo(meta_30d: float, dias_corridos: int) -> float` — `meta_30d * sqrt(dias_corridos / 30)`. Se `dias_corridos <= 0`, devolve `0.0`.
 
+**Janela de abertura da operação:** as vendas de put são abertas com **45 a 21 dias corridos** até o vencimento (inclusive). O seletor pode listar outras séries; a regra de operação é só essa faixa. Autoridade: `PROMPT-DASHBOARD.md` §6.7.
+
+**Strike de entrada (fase 2):** `prêmio_% = último negócio / strike`. Primeiro strike OTM (menor) cujo % ≥ meta do vencimento. Autoridade: spec `2026-08-13-fase2-strike-design.md`.
+
 - [ ] **Step 1: Write the failing test**
 
 ```python

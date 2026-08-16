@@ -154,7 +154,7 @@ Timestamps do portal já vêm em formato brasileiro. `time` do JSON está em ISO
 
 **Não chamar** `/mercado/acoes/opcoes/{TICKER}` na v1. Essa página pesa até ~5 MB por ativo (VALE3 4,9 MB) e só serve ao motor de strike.
 
-Se alguém no futuro for nessa rota: `put.bs.bid` / `put.bs.ask` são as cotações da **CALL** do mesmo strike. Prêmio da put é `put.bid` de primeiro nível. Sempre. Essa armadilha fica registrada aqui para a fase 2 não a repetir.
+Se alguém no futuro for nessa rota: `put.bs.bid` / `put.bs.ask` são as cotações da **CALL** do mesmo strike. O prêmio que escolhe o strike é `put.close` (último negócio) / strike, só com volume no dia. Bid/ask de primeiro nível são o livro, não a taxa de entrada. Nunca `bs.bid`. Essa armadilha fica registrada aqui para a fase 2 não a repetir.
 
 ### 5.3 Fundamentus
 
@@ -313,7 +313,7 @@ O Profit entregava pronto. Agora o código calcula. Cada período/desvio é conf
 | MM200 | SMA 200 do fechamento | RTD usava código `3`; tipo SMA assumido, configurável |
 | IFR (14) | RSI de Wilder, 14, suavização de Wilder | **Clássico**, não o IFR Simples do Profit. Ver nota abaixo. |
 | Bollinger | SMA(20) ± 2σ; usar a **banda inferior** | 20/2 é o padrão Profit, não está no arquivo |
-| HV | σ dos log-retornos de **21 dias úteis**, × √252 | janela curta de propósito (put 30–50d) |
+| HV | σ dos log-retornos de **21 dias úteis**, × √252 | janela curta de propósito (abertura da put em 45–21d) |
 | IV / IV Rank / IV Percentil | OpLab `iv_current`, `iv_1y_rank`, `iv_1y_percentile` | |
 | IV/HV | IV ÷ HV | > 1 = prêmio gordo; **destaque IV Rank/Percentil** — comparam o ativo consigo mesmo |
 | Máx/mín 52s | do `meta` Yahoo | coluna nova: posição no range `(p − mín)/(máx − mín)` em % |
@@ -332,6 +332,10 @@ Indicador impossível (histórico curto, IV ausente): texto **“sem dado”**, 
 ```
 prêmio_alvo_% = meta_30d × √(dias_corridos_até_vencimento / 30)
 ```
+
+**Janela de abertura da operação:** as vendas de put são abertas com **45 a 21 dias corridos** até o vencimento (inclusive). O seletor continua listando as outras séries para consulta; a regra de operação é só essa faixa.
+
+**Strike de entrada:** no vencimento escolhido, `prêmio_% = último negócio / strike`. O sistema sobe a cadeia OTM e fica com o **primeiro strike cujo % ≥ meta do vencimento** (menor strike que ainda bate a meta — máxima segurança). Exemplo BRAV3 18/09/2026, meta 1,21%: 0,19 / 16,13 = 1,17% (fica de fora); 0,22 / 16,38 = 1,34% (entra). Bid não escolhe strike.
 
 Na planilha, `dias_corridos` é digitado em Config!B19. Na web: um seletor no topo do Dashboard alimentado pela aba Vencimentos (datas reais, já ajustadas por feriado). Trocar o vencimento **recalcula só o prêmio-alvo** e o rótulo de dias. **Não reordena as três listas** — scoring não usa dado de opção.
 
@@ -450,7 +454,7 @@ Não misturar fase 3 com fase 1. Não “já que estamos no servidor, um server 
 
 ## 13. Fase 2 (não construir agora — só não esquecer)
 
-Motor de strike: cadeia OpLab só dos recomendados, `put.bid` (nunca `bs.bid`), piso de delta −0,45, strike OTM mais longe que ainda bate o prêmio-alvo, linha explicada se não houver série ou liquidez. Seletor instantâneo exige guardar **todas** as séries úteis no snapshot (não o JSON cru de 5 MB). Detalhe e armadilhas estão no `PROMPT-PLANEJAMENTO.md` antigo, seções 7 e 11.2/11.5/11.6 — consultar na hora, não agora.
+Motor de strike: cadeia OpLab só dos recomendados, prêmio = `put.close` / strike (nunca `bs.bid`), piso de delta −0,45, primeiro strike OTM (menor) cujo último/strike ≥ meta do vencimento, linha explicada se não houver série ou liquidez. Seletor instantâneo exige guardar **todas** as séries úteis no snapshot (não o JSON cru de 5 MB). Detalhe e armadilhas estão no `PROMPT-PLANEJAMENTO.md` antigo, seções 7 e 11.2/11.5/11.6 — consultar na hora, não agora.
 
 ---
 

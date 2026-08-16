@@ -111,6 +111,8 @@ def _put_quote(d: dict) -> PutQuote:
         delta=d.get("delta"),
         poe=poe,
         volume=d.get("volume"),
+        last=d.get("last"),
+        symbol=d.get("symbol"),
     )
 
 

@@ -161,6 +161,8 @@ class PutQuote:
     delta: Optional[float]
     poe: Optional[float]
     volume: Optional[float]
+    last: Optional[float] = None
+    symbol: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -175,6 +177,9 @@ class StrikePick:
     delta: Optional[float]
     poe: Optional[float]
     volume: Optional[float]
+    last: Optional[float] = None
+    last_pct: Optional[float] = None
+    symbol: Optional[str] = None
 
 
 @dataclass(frozen=True)

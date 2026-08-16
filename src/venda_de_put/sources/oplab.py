@@ -91,6 +91,7 @@ def parse_oplab_chain(html: str, today: date, max_days: int = MAX_CHAIN_DAYS) ->
                 continue
             put = row.get("put") or {}
             bs = put.get("bs") or {}
+            symbol = put.get("symbol")
             out.append(
                 PutQuote(
                     due_date=due,
@@ -100,6 +101,8 @@ def parse_oplab_chain(html: str, today: date, max_days: int = MAX_CHAIN_DAYS) ->
                     delta=_opt_float(bs.get("delta")),
                     poe=_opt_pct(bs.get("poe")),
                     volume=_opt_float(put.get("volume")),
+                    last=_opt_float(put.get("close")),
+                    symbol=None if not symbol else str(symbol),
                 )
             )
     return out
