@@ -22,3 +22,6 @@ data/snapshots/history/
 *.xlsx
 *.xls
 src/venda_de_put/web/static/prototype-fase2.html
+
+# Árvore Go que era a master em C:/dev/venda-de-put (zip local)
+archive/main-antes-do-reset/

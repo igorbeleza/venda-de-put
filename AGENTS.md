@@ -17,6 +17,7 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 - **Indicadores (IFR, MM200, Bollinger, HV)** → `src/venda_de_put/indicators.py` e `docs/sdd.md`.
 - **Deploy VPS** → `deploy/RUNBOOK.md`.
 - **Briefs antigos** → `docs/archive/2026-08-prompts-iniciais/` só como história. Nunca como regra.
+- **Árvore Go antiga** → zip local em `archive/main-antes-do-reset/` (gitignored). Ver `archive/README.md`.
 
 ## Trabalho
 
