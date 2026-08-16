@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, FastAPI, uvicorn, httpx, beautifulsoup4, lxml, pandas, pytest, HTML/CSS/JS puro (sem bundler, sem Tailwind, sem React). Persistência = arquivos JSON em `data/`.
 
-**Spec:** `PROMPT-DASHBOARD.md` é a autoridade de produto. O `.xlsx` é a autoridade do modelo. Este plano não reabre decisões de produto.
+**Spec:** autoridade de produto agora é `docs/mvp.md` + `docs/sdd.md`. Este plano é histórico da construção. Briefs originais em `docs/archive/2026-08-prompts-iniciais/`.
 
 ## Global Constraints
 
@@ -452,7 +452,7 @@ git commit -m "feat: calendário B3 e mensal pela janela dia 15–21"
 - Consumes: `meta_30d: float`, `dias_corridos: int`
 - Produces: `premio_alvo(meta_30d: float, dias_corridos: int) -> float` — `meta_30d * sqrt(dias_corridos / 30)`. Se `dias_corridos <= 0`, devolve `0.0`.
 
-**Janela de abertura da operação:** as vendas de put são abertas com **45 a 21 dias corridos** até o vencimento (inclusive). O seletor pode listar outras séries; a regra de operação é só essa faixa. Autoridade: `PROMPT-DASHBOARD.md` §6.7.
+**Janela de abertura da operação:** as vendas de put são abertas com **45 a 21 dias corridos** até o vencimento (inclusive). O seletor pode listar outras séries; a regra de operação é só essa faixa. Autoridade: `docs/mvp.md`.
 
 **Strike de entrada (fase 2):** `prêmio_% = último negócio / strike`. Primeiro strike OTM (menor) cujo % ≥ meta do vencimento. Autoridade: spec `2026-08-13-fase2-strike-design.md`.
 
@@ -595,7 +595,7 @@ RSI Wilder: primeira média de ganhos/perdas = média simples dos 14 primeiros d
 - **Simples** — `FR = média(var. positivas) / média(var. negativas)` nos últimos 14 deltas. Sem memória (RSI de Cutler / SMA).
 - **Clássico** — “média das médias”: `X = (média_anterior × 13 + variação_atual) / 14` em ganhos e perdas. É o RSI de Wilder.
 
-Este plano implementa o **Clássico** (`rsi_wilder`). A planilha Excel original não calculava IFR: lia o RTD do Profit no tipo que estivesse no gráfico. Comparar o IFR daqui com o **Simples** do Profit é erro de método (no ITUB4, 14/08/2026 fechamento 39,00: Simples Profit 24,49 vs Clássico Profit 29,85 vs Clássico daqui 34,92). Mesmo no Clássico o nível pode divergir ~5 pp — a série de fechamentos do gráfico Profit não é idêntica à do Yahoo/COTAHIST. Autoridade de produto: `PROMPT-DASHBOARD.md` §6.6.
+Este plano implementa o **Clássico** (`rsi_wilder`). A planilha Excel original não calculava IFR: lia o RTD do Profit no tipo que estivesse no gráfico. Comparar o IFR daqui com o **Simples** do Profit é erro de método (no ITUB4, 14/08/2026 fechamento 39,00: Simples Profit 24,49 vs Clássico Profit 29,85 vs Clássico daqui 34,92). Mesmo no Clássico o nível pode divergir ~5 pp — a série de fechamentos do gráfico Profit não é idêntica à do Yahoo/COTAHIST. Autoridade: `docs/adr/0003-ifr-wilder.md`.
 
 HV: ignorar pares com `None` ou `<= 0`; precisa de `n` retornos válidos.
 

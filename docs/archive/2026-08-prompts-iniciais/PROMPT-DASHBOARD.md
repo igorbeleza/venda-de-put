@@ -1,5 +1,7 @@
 # Prompt de planejamento — Dashboard de Venda de PUT
 
+> **Arquivo.** História de agosto/2026. Não é autoridade. Leia `AGENTS.md`, `docs/mvp.md` e `docs/sdd.md`.
+
 Documento **novo**. Não é reescrita do `PROMPT-PLANEJAMENTO.md`. O Excel é a autoridade do modelo; o arquivo antigo só entra como fonte de armadilhas de coleta já medidas.
 
 **O que fazer com este texto:** ler inteiro, devolver um plano de implementação (arquivos, fases, testes, deploy) e só então escrever código. Não implementar neste passo.

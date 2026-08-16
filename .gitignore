@@ -1,8 +1,24 @@
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .pytest_cache/
-data/snapshots/current.json
-data/snapshots/history/
+.coverage
+htmlcov/
+dist/
+build/
 *.egg-info/
 .superpowers/
+.idea/
+.vscode/
+*.log
+
+# Snapshot gerado pelo scrape (não versionar cotação)
+data/snapshots/current.json
+data/snapshots/history/
+
+# Planilha original e protótipo de UI — locais, não autoridade
+*.xlsx
+*.xls
+src/venda_de_put/web/static/prototype-fase2.html

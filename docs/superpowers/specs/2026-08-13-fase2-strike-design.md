@@ -2,6 +2,8 @@
 
 Data: 2026-08-13
 
+Autoridade viva do produto: `docs/mvp.md` e `docs/sdd.md`. Este arquivo detalha o motor de strike.
+
 ## Decisão de produto
 
 Variante **A (Faixa Excel)**, com o ajuste pedido: em cada card, destacar **preço atual** (não “preço”), **strike** e **prêmio (último negócio)**.

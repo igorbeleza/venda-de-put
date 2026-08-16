@@ -1,4 +1,7 @@
-"""Extract fixtures from carteira_venda_put Excel for tests and seed data."""
+"""Extract fixtures from carteira_venda_put Excel for tests and seed data.
+
+The .xlsx is gitignored (local reference). Copy it to the repo root to run this.
+"""
 
 from __future__ import annotations
 
