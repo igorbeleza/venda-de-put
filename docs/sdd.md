@@ -68,7 +68,7 @@ Instruções: `GET /api/instrucoes` lê `web/instrucoes.md`. Testes recusam cert
 
 ## Armadilhas de fonte
 
-- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem.
+- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. `preco` e `closes` são independentes: indicadores não usam o à vista do instante como último período (ideia futura em `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`).
 - OpLab cadeia: página grande (VALE3 ~5 MB). Não persistir o HTML.
 - Fundamentus: charset iso-8859-1; percentuais da tabela viram fração (0,10 = 10%).
 - Snapshot antigo sem `last`: até o próximo scrape a série fica sem liquidez. Campo opcional no load.
