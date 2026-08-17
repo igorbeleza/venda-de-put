@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mockup A+B — chapa usinada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;650&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #9e9890;
+      --plate: #c4beb2;
+      --pocket: #a8a296;
+      --raised: #d2ccc0;
+      --ink: #1b1814;
+      --ink-2: #5a554c;
+      --ink-3: #7a7468;
+      --enamel: #14492e;
+      --enamel-ink: #f3efe6;
+      --brass: #b08a3e;
+      --brass-deep: #7a5e24;
+      --brass-ink: #241c0c;
+      --warn: #8a3b12;
+      --warn-tint: #e8d3b8;
+      --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      color-scheme: light;
+    }
+    [data-theme="dark"] {
+      --page: #0b0c0d;
+      --plate: #1a1b1e;
+      --pocket: #101114;
+      --raised: #24262b;
+      --ink: #ece6db;
+      --ink-2: #a39b8e;
+      --ink-3: #6f6a60;
+      --enamel: #1b6b3e;
+      --enamel-ink: #eef6ef;
+      --brass: #c4a35a;
+      --brass-deep: #8a6c30;
+      --brass-ink: #f4e6c0;
+      --warn: #f3c28a;
+      --warn-tint: #3a2a18;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.045) 2px 3px),
+        radial-gradient(900px 420px at 8% -10%, rgba(255,255,255,.22), transparent 50%),
+        linear-gradient(165deg, #b7b1a6, var(--page) 46%, #7f7a72);
+    }
+    [data-theme="dark"] body {
+      background:
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(255,255,255,.03) 2px 3px),
+        radial-gradient(800px 380px at 10% -12%, rgba(196,163,90,.07), transparent 48%),
+        linear-gradient(165deg, #1c1d20, #0b0c0d 50%, #070708);
+    }
+    .note {
+      position: sticky; top: 0; z-index: 8;
+      padding: 8px 16px;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      background: var(--brass);
+      color: var(--brass-ink);
+      text-align: center;
+    }
+    .chassis {
+      display: flex;
+      min-height: 100dvh;
+      margin: 14px;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.22), transparent 28%),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.04) 2px 3px),
+        var(--plate);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.35),
+        inset 0 -2px 0 rgba(0,0,0,.18),
+        0 0 0 1px rgba(0,0,0,.28),
+        0 22px 50px rgba(0,0,0,.28);
+    }
+    .rail {
+      width: 15.4rem;
+      flex-shrink: 0;
+      padding: 1.3rem 1rem;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.08), transparent 40%),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.035) 2px 3px),
+        var(--pocket);
+      box-shadow: inset -2px 0 0 rgba(0,0,0,.2), inset 1px 0 0 rgba(255,255,255,.12);
+    }
+    .row { display: flex; justify-content: space-between; align-items: center; }
+    .mark {
+      width: 36px; height: 36px; border-radius: 6px;
+      display: grid; place-items: center;
+      background: var(--enamel); color: var(--enamel-ink);
+      font: 700 12px var(--mono);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 1px rgba(0,0,0,.25);
+    }
+    .switch { display: flex; gap: 2px; padding: 3px; border-radius: 4px;
+      background: rgba(0,0,0,.12); box-shadow: inset 0 1px 2px rgba(0,0,0,.25); }
+    .switch button {
+      border: 0; background: transparent; color: var(--ink-3);
+      width: 28px; height: 26px; border-radius: 3px; cursor: pointer;
+    }
+    .switch button[aria-pressed="true"] {
+      background: var(--raised); color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 1px 0 rgba(0,0,0,.2);
+    }
+    .brand { margin: 14px 0 16px; }
+    .brand b { display: block; font-size: 15px; letter-spacing: -.02em; }
+    .brand span { font-size: 11px; color: var(--ink-3); letter-spacing: .12em; text-transform: uppercase; }
+    .nav-label { margin: 0 0 6px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+    .nav a {
+      display: block; color: var(--ink-2); text-decoration: none;
+      padding: 8px 10px; border-radius: 4px; margin-bottom: 4px;
+    }
+    .nav a.on {
+      background: var(--raised); color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 0 rgba(0,0,0,.18);
+    }
+    .stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .tabs {
+      display: flex; gap: 3px; padding: 12px 16px;
+      overflow-x: auto;
+      box-shadow: inset 0 -1px 0 rgba(0,0,0,.18);
+    }
+    .tab {
+      border: 0; background: transparent; color: var(--ink-2);
+      padding: 7px 12px; border-radius: 4px; cursor: pointer; font: inherit; white-space: nowrap;
+    }
+    .tab.on {
+      background: var(--raised); color: var(--ink); font-weight: 600;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 1px 0 rgba(0,0,0,.2);
+    }
+    .pane { padding: 18px 22px 48px; }
+    .pane[hidden] { display: none; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 14px; color: var(--ink-2); font-size: .95rem; }
+    select, input {
+      font: inherit; color: var(--ink); background: var(--pocket); border: 0;
+      padding: 6px 8px; border-radius: 4px;
+      box-shadow: inset 0 2px 3px rgba(0,0,0,.22), inset 0 -1px 0 rgba(255,255,255,.1);
+    }
+    .go {
+      border: 0; background: var(--enamel); color: var(--enamel-ink);
+      padding: 7px 14px; border-radius: 4px; font: 600 inherit; cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 1px 0 rgba(0,0,0,.25);
+    }
+    .stamp { color: var(--ink-3); font-size: .86rem; }
+    .tape {
+      display: flex; flex-wrap: wrap; margin-bottom: 26px; border-radius: 8px; overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.18), transparent 40%),
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.05) 2px 3px),
+        var(--raised);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.35),
+        inset 0 -2px 3px rgba(0,0,0,.18),
+        0 0 0 1px rgba(0,0,0,.2);
+    }
+    .cell { flex: 1; min-width: 170px; padding: 16px 20px; }
+    .cell + .cell { box-shadow: inset 1px 0 0 rgba(0,0,0,.18); }
+    .lbl { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+    .val { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; letter-spacing: -.04em; margin-top: 2px; }
+    .cell.gold {
+      background:
+        linear-gradient(180deg, #d8b86a, #a07a32);
+      color: var(--brass-ink);
+    }
+    .cell.gold .lbl { color: rgba(36,28,12,.65); }
+    .cell.gold .val { font-size: 2.05rem; }
+    .list + .list { margin-top: 32px; }
+    .list h2 {
+      margin: 0 0 6px; font-size: 1.15rem; font-weight: 650; letter-spacing: -.02em;
+      display: flex; gap: 10px; align-items: baseline;
+    }
+    .idx { font-family: var(--mono); font-size: .78rem; color: var(--brass-deep); font-weight: 600; }
+    .narr { margin: 0 0 14px; max-width: 70rem; color: var(--ink-2); font-size: .93rem; line-height: 1.55; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 12px; }
+    .card {
+      padding: 14px 14px 12px;
+      border-radius: 8px;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.035) 2px 3px),
+        var(--pocket);
+      box-shadow:
+        inset 0 2px 4px rgba(0,0,0,.28),
+        inset 0 -1px 0 rgba(255,255,255,.12),
+        0 0 0 1px rgba(0,0,0,.18);
+    }
+    .kicker { margin: 0 0 4px; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .ticker { margin: 0; font-family: var(--mono); font-size: 1.2rem; font-weight: 700; letter-spacing: -.03em; }
+    .chip {
+      font-size: .7rem; font-weight: 650; padding: 3px 8px; border-radius: 3px;
+      background: var(--enamel); color: var(--enamel-ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .chip.warn { background: var(--warn-tint); color: var(--warn); }
+    .sinal {
+      margin: 0 0 8px; text-align: center; padding: 5px 8px; border-radius: 3px;
+      background: var(--enamel); color: var(--enamel-ink);
+      font-family: var(--mono); font-size: .78rem; font-weight: 700; letter-spacing: .06em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25);
+    }
+    .ops { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+    .op {
+      padding: 7px 8px; border-radius: 4px;
+      background: var(--plate);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 1px 0 rgba(0,0,0,.15);
+    }
+    .op span { display: block; font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+    .op b { display: block; font-family: var(--mono); font-size: 1rem; font-weight: 650; }
+    .op small { display: block; font-size: .72rem; font-weight: 600; color: var(--ink-2); }
+    .strip { display: grid; grid-template-columns: 1fr 1fr; margin: 8px 0; border-radius: 4px; overflow: hidden;
+      box-shadow: inset 0 2px 3px rgba(0,0,0,.2); }
+    .strip div { padding: 7px 8px; }
+    .strip .a { background: var(--plate); }
+    .strip .b { background: color-mix(in srgb, var(--brass) 22%, var(--plate)); }
+    .strip span { display: block; font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+    .strip b { font-family: var(--mono); font-size: 1.05rem; }
+    dl { margin: 8px 0 0; display: grid; grid-template-columns: max-content 1fr max-content 1fr; gap: 4px 12px; align-items: baseline; }
+    dt { color: var(--ink-3); font-size: .76rem; }
+    dd { margin: 0; text-align: right; font-family: var(--mono); font-size: .84rem; font-variant-numeric: tabular-nums; }
+    table { width: 100%; border-collapse: collapse; background: var(--pocket); border-radius: 8px; overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.25); }
+    th, td { padding: 8px 10px; text-align: left; font-variant-numeric: tabular-nums; }
+    th { font-size: 11px; color: var(--ink-2); background: var(--plate); }
+    td { border-top: 1px solid rgba(0,0,0,.12); font-family: var(--mono); font-size: .86rem; }
+    foot { display: block; padding: 12px 18px; color: var(--ink-3); font-size: 12px;
+      box-shadow: inset 0 1px 0 rgba(0,0,0,.18); }
+    @media (max-width: 720px) {
+      .chassis { flex-direction: column; margin: 8px; }
+      .rail { width: 100%; }
+      .nav { display: none; }
+      .ops { grid-template-columns: 1fr; }
+      dl { grid-template-columns: auto 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="note">Mockup A+B — chapa usinada · o dashboard ativo não foi alterado</div>
+  <div class="chassis">
+    <aside class="rail">
+      <div class="row">
+        <span class="mark">VP</span>
+        <div class="switch" role="group" aria-label="Acabamento">
+          <button type="button" id="to-a" aria-pressed="true" title="Titânio natural">A</button>
+          <button type="button" id="to-b" aria-pressed="false" title="Space black">B</button>
+        </div>
+      </div>
+      <div class="brand">
+        <b>Venda de PUT</b>
+        <span>Seleção B3</span>
+      </div>
+      <p class="nav-label">Telas</p>
+      <nav class="nav">
+        <a class="on" href="#dash">Venda de PUT</a>
+      </nav>
+    </aside>
+    <div class="stage">
+      <header class="tabs">
+        <button class="tab on" data-p="dash">Dashboard</button>
+        <button class="tab" data-p="ativos">Ativos</button>
+        <button class="tab" data-p="dados">Dados</button>
+        <button class="tab" data-p="setores">Setores</button>
+        <button class="tab" data-p="config">Config</button>
+        <button class="tab" data-p="venc">Vencimentos</button>
+        <button class="tab" data-p="fer">Feriados</button>
+        <button class="tab" data-p="ins">Instruções</button>
+      </header>
+
+      <section id="dash" class="pane">
+        <div class="bar">
+          <label>Vencimento
+            <select>
+              <option>18/09/2026 · sex · 32 dias corridos · 24 úteis · MENSAL</option>
+              <option>21/08/2026 · sex · 4 dias corridos · 5 úteis · MENSAL</option>
+            </select>
+          </label>
+          <label><input type="checkbox" checked> Só mensais</label>
+          <span class="stamp">Atualizado em 17/08/2026, 16:05:00</span>
+          <button class="go" type="button">Atualizar</button>
+        </div>
+        <div class="tape">
+          <div class="cell"><div class="lbl">Meta de prêmio p/ 30 dias</div><div class="val">1,15%</div></div>
+          <div class="cell"><div class="lbl">Dias até o vencimento (corridos)</div><div class="val">32</div></div>
+          <div class="cell gold"><div class="lbl">Prêmio-alvo para esse vencimento</div><div class="val">1,19%</div></div>
+        </div>
+
+        <article class="list">
+          <h2><span class="idx">01</span> Fundamentalista</h2>
+          <p class="narr">Empresa que se aceita carregar se exercido. Compara cada papel com o próprio setor. Não é ranking absoluto.</p>
+          <div class="cards">
+            <article class="card">
+              <p class="kicker">Aceitaria carregar</p>
+              <header class="head"><h3 class="ticker">BBAS3</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>27,80</b></div>
+                <div class="op"><span>Strike</span><b>26,21</b><small>BBASU262</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,38</b><small>1,45%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>5,72%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>Grupo</dt><dd>Financeiro</dd><dt>ScoreF</dt><dd>1,25</dd>
+                <dt>ROE</dt><dd>19%</dd><dt>P/L</dt><dd>4,9</dd>
+                <dt>P/VP</dt><dd>0,90</dd><dt>DY</dt><dd>8%</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">Aceitaria carregar</p>
+              <header class="head"><h3 class="ticker">PETR4</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>38,40</b></div>
+                <div class="op"><span>Strike</span><b>36,21</b><small>PETRU362</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,62</b><small>1,71%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>5,70%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>Grupo</dt><dd>Petróleo</dd><dt>ScoreF</dt><dd>1,00</dd>
+                <dt>ROE</dt><dd>24%</dd><dt>P/L</dt><dd>5,8</dd>
+                <dt>P/VP</dt><dd>1,05</dd><dt>DY</dt><dd>11%</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">Aceitaria carregar</p>
+              <header class="head"><h3 class="ticker">RENT3</h3><span class="chip warn">abaixo da meta</span></header>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>44,80</b></div>
+                <div class="op"><span>Strike</span><b>42,50</b></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,15</b><small>0,35%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>5,13%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>Grupo</dt><dd>Transporte</dd><dt>ScoreF</dt><dd>1,00</dd>
+                <dt>ROE</dt><dd>11%</dd><dt>P/L</dt><dd>14</dd>
+                <dt>P/VP</dt><dd>2,40</dd><dt>DY</dt><dd>2,5%</dd>
+              </dl>
+            </article>
+          </div>
+        </article>
+
+        <article class="list">
+          <h2><span class="idx">02</span> Técnico</h2>
+          <p class="narr">Timing: tendência alta e recuo na banda. O sinal só acende quando as duas coisas se encontram.</p>
+          <div class="cards">
+            <article class="card">
+              <p class="kicker">Timing agora</p>
+              <header class="head"><h3 class="ticker">ITUB4</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>34,20</b></div>
+                <div class="op"><span>Strike</span><b>32,46</b><small>ITUBU324</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,41</b><small>1,26%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>5,09%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>SINAL</dt><dd>► VENDER PUT</dd><dt>IFR</dt><dd>41</dd>
+                <dt>Boll Inf</dt><dd>33,70</dd><dt>IV/HV</dt><dd>1,21</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">Timing agora</p>
+              <header class="head"><h3 class="ticker">VALE3</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>58,90</b></div>
+                <div class="op"><span>Strike</span><b>55,18</b><small>VALEU551</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,88</b><small>1,59%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>6,32%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>SINAL</dt><dd>► VENDER PUT</dd><dt>IFR</dt><dd>28</dd>
+                <dt>Boll Inf</dt><dd>57,40</dd><dt>IV/HV</dt><dd>1,21</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">Timing agora</p>
+              <header class="head"><h3 class="ticker">SUZB3</h3><span class="chip warn">abaixo da meta</span></header>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>52,30</b></div>
+                <div class="op"><span>Strike</span><b>49,71</b></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,18</b><small>0,36%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Vencimento</dt><dd>18/09/2026</dd><dt>Distância</dt><dd>4,95%</dd>
+                <dt>Delta</dt><dd>−0,27</dd><dt>Prob. exercício</dt><dd>25%</dd>
+                <dt>SINAL</dt><dd>—</dd><dt>IFR</dt><dd>44</dd>
+                <dt>Boll Inf</dt><dd>51,10</dd><dt>IV/HV</dt><dd>1,21</dd>
+              </dl>
+            </article>
+          </div>
+        </article>
+
+        <article class="list">
+          <h2><span class="idx">03</span> Combinado</h2>
+          <p class="narr">Interseção: empresa que se aceita carregar e que está no momento de entrada. Pode vir com menos de 10 nomes.</p>
+          <div class="cards">
+            <article class="card">
+              <p class="kicker">As duas pontas</p>
+              <header class="head"><h3 class="ticker">EGIE3</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>39,50</b></div>
+                <div class="op"><span>Strike</span><b>37,46</b><small>EGIEU374</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,51</b><small>1,36%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Grupo</dt><dd>Utilities</dd><dt>ScoreF</dt><dd>1,00</dd>
+                <dt>SINAL</dt><dd>► VENDER PUT</dd><dt>IFR</dt><dd>36</dd>
+                <dt>IV/HV</dt><dd>1,21</dd><dt>Delta</dt><dd>−0,27</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">As duas pontas</p>
+              <header class="head"><h3 class="ticker">BBSE3</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>33,10</b></div>
+                <div class="op"><span>Strike</span><b>31,43</b><small>BBSEU314</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,47</b><small>1,50%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Grupo</dt><dd>Financeiro</dd><dt>ScoreF</dt><dd>1,45</dd>
+                <dt>SINAL</dt><dd>► VENDER PUT</dd><dt>IFR</dt><dd>27</dd>
+                <dt>IV/HV</dt><dd>1,21</dd><dt>Delta</dt><dd>−0,27</dd>
+              </dl>
+            </article>
+            <article class="card">
+              <p class="kicker">As duas pontas</p>
+              <header class="head"><h3 class="ticker">ABEV3</h3><span class="chip">bate a meta</span></header>
+              <p class="sinal">► VENDER PUT</p>
+              <div class="ops">
+                <div class="op"><span>Preço atual</span><b>12,40</b></div>
+                <div class="op"><span>Strike</span><b>11,71</b><small>ABEVU117</small></div>
+                <div class="op"><span>Prêmio (últ.)</span><b>0,19</b><small>1,62%</small></div>
+              </div>
+              <div class="strip"><div class="a"><span>Meta 30 dias</span><b>1,15%</b></div><div class="b"><span>Meta venc.</span><b>1,19%</b></div></div>
+              <dl>
+                <dt>Grupo</dt><dd>Agro</dd><dt>ScoreF</dt><dd>1,00</dd>
+                <dt>SINAL</dt><dd>► VENDER PUT</dd><dt>IFR</dt><dd>33</dd>
+                <dt>IV/HV</dt><dd>1,21</dd><dt>Delta</dt><dd>−0,27</dd>
+              </dl>
+            </article>
+          </div>
+        </article>
+      </section>
+
+      <section id="ativos" class="pane" hidden>
+        <table>
+          <thead><tr><th>Ticker</th><th>Grupo</th><th>ScoreF</th><th>SINAL</th><th>IFR</th><th>IV/HV</th></tr></thead>
+          <tbody>
+            <tr><td>BBAS3</td><td>Financeiro</td><td>1,25</td><td>► VENDER PUT</td><td>24</td><td>1,21</td></tr>
+            <tr><td>PETR4</td><td>Petróleo</td><td>1,00</td><td>► VENDER PUT</td><td>32</td><td>1,21</td></tr>
+            <tr><td>ITUB4</td><td>Financeiro</td><td>1,95</td><td>► VENDER PUT</td><td>41</td><td>1,21</td></tr>
+            <tr><td>RENT3</td><td>Transporte</td><td>1,00</td><td>—</td><td>48</td><td>1,21</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section id="dados" class="pane" hidden><p class="narr">Aba Dados — mesma chapa, tabela de indicadores. Mockup.</p></section>
+      <section id="setores" class="pane" hidden><p class="narr">Aba Setores — ranks dentro do grupo. Mockup.</p></section>
+      <section id="config" class="pane" hidden>
+        <p class="narr">Calculadora: Meta 30d × √(dias / 30). Campos recuados na chapa, sem vidro.</p>
+        <label>Meta de prêmio p/ 30 dias <input value="0,0115"></label>
+      </section>
+      <section id="venc" class="pane" hidden><p class="narr">Lista de vencimentos mensais e semanais. Mockup.</p></section>
+      <section id="fer" class="pane" hidden><p class="narr">Feriados B3. Mockup.</p></section>
+      <section id="ins" class="pane" hidden>
+        <p class="narr">Ferramenta de seleção para venda de put coberta por critério próprio. Sem terminal de corretora.</p>
+      </section>
+      <foot>Ferramenta de seleção, não recomendação de compra ou venda de ativo.</foot>
+    </div>
+  </div>
+  <script>
+    const root = document.documentElement;
+    const a = document.getElementById("to-a");
+    const b = document.getElementById("to-b");
+    function setTheme(t) {
+      root.setAttribute("data-theme", t);
+      a.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+      b.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+    }
+    a.onclick = () => setTheme("light");
+    b.onclick = () => setTheme("dark");
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((x) => x.classList.remove("on"));
+        btn.classList.add("on");
+        document.querySelectorAll(".pane").forEach((p) => { p.hidden = p.id !== btn.dataset.p; });
+      });
+    });
+  </script>
+</body>
+</html>

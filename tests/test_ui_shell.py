@@ -22,10 +22,10 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert "Tema escuro" in html
     assert "vdp-theme" in html
     css = TestClient(app).get("/static/app.css").text
-    assert "--canvas: #f1f2f3" in css
+    assert "--canvas: #b4aea3" in css
     assert '[data-theme="dark"]' in css
-    assert "--canvas: #1c1d1f" in css
-    assert "Inter" in css
+    assert "--canvas: #121314" in css
+    assert "-apple-system" in css
     assert "width: 100%" in css
     assert "min(1440px" not in css
     assert "--card-min" in css

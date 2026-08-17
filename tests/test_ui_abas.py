@@ -133,7 +133,7 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     css = client.get("/static/app.css").text
     assert "max-width: 720px" in css
     assert "data-label" in css or "attr(data-label)" in css
-    assert "#FFF7D6" in css
+    assert "#eee6d4" in css
     js = client.get("/static/app.js").text
     assert "/api/ativos" in js
     assert '["mm200", "MM200"]' in js

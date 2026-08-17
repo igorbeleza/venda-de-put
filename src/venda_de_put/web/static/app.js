@@ -101,8 +101,8 @@ function opsBlock(a, vencIso, meta30, alvo) {
   return `
     <div class="card-ops">
       <div class="op hl-ops"><span>Preço atual</span><b>${num(a.preco)}</b></div>
-      <div class="op hl-ops"><span>Strike</span><b>${strikeLbl}</b></div>
-      <div class="op hl-ops"><span>Prêmio (últ.)</span><b>${premio}</b></div>
+      <div class="op hl-ops op-strike"><span>Strike</span><b>${strikeLbl}</b></div>
+      <div class="op hl-ops op-premio"><span>Prêmio (últ.)</span><b>${premio}</b></div>
     </div>
     <div class="card-strip">
       <div class="m30"><span>Meta 30 dias</span><b>${num(meta30, "pct")}</b></div>
@@ -121,9 +121,27 @@ function stampText(iso) {
   return `Atualizado em ${fmtDateTime.format(d)}`;
 }
 
+const CARD_KICKER = {
+  fundamentalista: "Aceitaria carregar",
+  tecnico: "Timing agora",
+  combinado: "As duas pontas",
+};
+
 function cardHtml(kind, a, vencIso, meta30, alvo) {
   const ops = opsBlock(a, vencIso, meta30, alvo);
   const status = strikeStatus(a.strike_status, vencIso);
+  const kicker = CARD_KICKER[kind] || "";
+  const sinalAceso = a.sinal === "► VENDER PUT";
+  const mods = [
+    `card-${kind}`,
+    a.strike_status === "ok" ? "is-ok" : "",
+    a.strike_status === "abaixo_da_meta" ? "is-soft" : "",
+    (a.strike_status === "sem_serie" || a.strike_status === "sem_liquidez") ? "is-void" : "",
+    sinalAceso ? "is-sinal" : "",
+  ].filter(Boolean).join(" ");
+  const sinalBar = sinalAceso
+    ? `<p class="card-sinal">► VENDER PUT</p>`
+    : "";
   let metrics;
   if (kind === "fundamentalista") {
     metrics = `<dt>Grupo</dt>${grupoHtml(a.grupo)}
@@ -148,8 +166,10 @@ function cardHtml(kind, a, vencIso, meta30, alvo) {
       <dt>IV Rank</dt><dd>${num(a.iv_rank)}</dd>
       <dt>IV Percentil</dt><dd>${num(a.iv_percentile)}</dd>`;
   }
-  return `<article class="card">
+  return `<article class="card ${mods}">
+    <p class="card-kicker">${kicker}</p>
     <header class="card-head"><h3 class="ticker">${a.ticker}</h3>${status}</header>
+    ${sinalBar}
     ${ops}
     <dl class="card-metrics">${metrics}</dl>
   </article>`;
