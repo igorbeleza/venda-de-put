@@ -51,8 +51,8 @@ Papéis com put líquida o bastante para o modelo, cada um com um grupo setorial
 _Avoid_: Ibovespa inteiro, carteira livre
 
 **Fundamentalista**:
-Top 10 por ScoreF — empresas que se aceita carregar se exercido.
-_Avoid_: ranking absoluto sem setor
+Top 10 por PctF (ScoreF ranqueado no grupo) — empresas que se aceita carregar se exercido.
+_Avoid_: ranking absoluto sem setor; ordenar a ① por ScoreF cru
 
 **Técnico**:
 Top 10 por timing (sinal de vender put, depois ScoreT).
@@ -77,8 +77,12 @@ Ordenação do timing. Com sinal aceso, quanto mais perto da banda inferior, mel
 _Avoid_: IFR como score
 
 **ScoreC**:
-Percentil do ScoreF no universo, usado no combinado.
-_Avoid_: produto ScoreF × ScoreT
+PctF do ativo quando o SINAL está aceso; senão vazio. Ordena a lista combinada.
+_Avoid_: produto ScoreF × ScoreT; PctFu da planilha (é desempate `ROW()/1e8`, não percentil no universo)
+
+**PctF**:
+Percentil do ScoreF **dentro do grupo**. Menor = melhor do setor.
+_Avoid_: percentil nos 86; confundir com ScoreF cru
 
 **IFR**:
 RSI de Wilder 14 (clássico). Faixa de entrada 10–50.

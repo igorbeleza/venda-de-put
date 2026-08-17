@@ -52,11 +52,14 @@ Código: `select_strike`. Spec: `docs/superpowers/specs/2026-08-13-fase2-strike-
 
 ## Scoring (resumo)
 
+Fórmulas e relação com as listas ①②③: `docs/scoring.md`.
+
 - Ranks **dentro do grupo**. Financeiro: sem ROIC, dívida, liquidez corrente, EV/EBITDA no ScoreF (nMrgL entra).
 - Múltiplo ≤ 0 vai para o fim do rank, não é “barato”.
 - Tendência alta ⇔ preço > MM200.
 - Entrada ⇔ IFR ∈ [ifr_min, ifr_max] e preço ≤ Boll Inf × (1+folga).
 - SINAL acende só com os dois.
+- ① = 10 menores PctF; ② = 10 menores ScoreT; ③ = ScoreC (= PctF se SINAL). PctFu/ScoreTu/ScoreCu da planilha são só desempate (`ROW()/1e8`); o app usa o ticker.
 
 Detalhe numérico: o código e os testes. Paridade Excel dos ranks: fixtures em `tests/fixtures/`.
 
@@ -68,7 +71,7 @@ Instruções: `GET /api/instrucoes` lê `web/instrucoes.md`. Testes recusam cert
 
 ## Armadilhas de fonte
 
-- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. `preco` e `closes` são independentes: indicadores não usam o à vista do instante como último período (ideia futura em `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`).
+- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. O à vista do instante (`preco`) é o último período da série: troca a barra de hoje ou anexa. Ver `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`.
 - OpLab cadeia: página grande (VALE3 ~5 MB). Não persistir o HTML.
 - Fundamentus: charset iso-8859-1; percentuais da tabela viram fração (0,10 = 10%).
 - Snapshot antigo sem `last`: até o próximo scrape a série fica sem liquidez. Campo opcional no load.
