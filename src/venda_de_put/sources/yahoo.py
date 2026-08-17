@@ -7,6 +7,7 @@ from typing import Optional
 
 import httpx
 
+from venda_de_put.indicators import apply_spot_as_last_period
 from venda_de_put.models import CandleSeries
 from venda_de_put.sources.types import USER_AGENT
 from venda_de_put.tz import TZ
@@ -14,7 +15,9 @@ from venda_de_put.tz import TZ
 YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}.SA?range=2y&interval=1d"
 
 
-def parse_yahoo_chart(payload: dict, ticker: str) -> CandleSeries:
+def parse_yahoo_chart(
+    payload: dict, ticker: str, now: datetime | None = None
+) -> CandleSeries:
     results = (payload.get("chart") or {}).get("result") or []
     if not results:
         raise ValueError(f"Yahoo chart sem result para {ticker}")
@@ -25,16 +28,22 @@ def parse_yahoo_chart(payload: dict, ticker: str) -> CandleSeries:
     closes: list[Optional[float]] = []
     for c in closes_raw:
         closes.append(None if c is None else float(c))
+    timestamps_raw = result.get("timestamp") or []
+    timestamps: list[Optional[int]] = []
+    for t in timestamps_raw:
+        timestamps.append(None if t is None else int(t))
     high = meta.get("fiftyTwoWeekHigh")
     low = meta.get("fiftyTwoWeekLow")
     preco = meta.get("regularMarketPrice")
+    collected = now or datetime.now(TZ)
+    spot = None if preco is None else float(preco)
     return CandleSeries(
         ticker=ticker,
-        closes=closes,
-        preco=None if preco is None else float(preco),
+        closes=apply_spot_as_last_period(closes, spot, timestamps, collected),
+        preco=spot,
         max_52=None if high is None else float(high),
         min_52=None if low is None else float(low),
-        collected_at=datetime.now(TZ),
+        collected_at=collected,
     )
 
 

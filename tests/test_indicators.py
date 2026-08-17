@@ -1,12 +1,19 @@
 import math
+from datetime import datetime
 
 from venda_de_put.indicators import (
+    apply_spot_as_last_period,
     bollinger_lower,
     hv_log,
     posicao_52s,
     rsi_wilder,
     sma,
 )
+from venda_de_put.tz import TZ
+
+NOW = datetime(2026, 8, 17, 11, 0, tzinfo=TZ)
+TS_TODAY = int(NOW.timestamp())
+TS_YDAY = int(datetime(2026, 8, 14, 18, 0, tzinfo=TZ).timestamp())
 
 
 def test_sma_needs_full_window():
@@ -48,3 +55,46 @@ def test_bollinger_lower_below_sma():
     low = bollinger_lower(closes, 20, 2.0)
     assert mid is not None and low is not None
     assert low < mid
+
+
+def test_spot_replaces_todays_close():
+    got = apply_spot_as_last_period(
+        [40.0, 41.0], 39.2, timestamps=[TS_YDAY, TS_TODAY], now=NOW
+    )
+    assert got == [40.0, 39.2]
+
+
+def test_spot_appends_when_last_bar_is_not_today():
+    got = apply_spot_as_last_period(
+        [40.0, 41.0], 39.2, timestamps=[TS_YDAY - 86400, TS_YDAY], now=NOW
+    )
+    assert got == [40.0, 41.0, 39.2]
+
+
+def test_spot_none_leaves_closes():
+    assert apply_spot_as_last_period([40.0, 41.0], None, timestamps=[TS_TODAY], now=NOW) == [
+        40.0,
+        41.0,
+    ]
+
+
+def test_spot_fills_todays_hole():
+    got = apply_spot_as_last_period(
+        [40.0, None], 39.2, timestamps=[TS_YDAY, TS_TODAY], now=NOW
+    )
+    assert got == [40.0, 39.2]
+
+
+def test_spot_does_not_duplicate_when_preco_is_last_close():
+    got = apply_spot_as_last_period(
+        [40.0, 41.0], 41.0, timestamps=[TS_YDAY - 86400, TS_YDAY], now=NOW
+    )
+    assert got == [40.0, 41.0]
+
+
+def test_bollinger_moves_when_spot_drops():
+    closes = [100.0] * 19 + [100.0]
+    old = bollinger_lower(closes, 20, 2.0)
+    new = bollinger_lower(apply_spot_as_last_period(closes, 80.0, timestamps=[TS_TODAY], now=NOW), 20, 2.0)
+    assert old is not None and new is not None
+    assert new < old

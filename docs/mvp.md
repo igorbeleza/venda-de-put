@@ -44,4 +44,4 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 
 ## Depois do MVP
 
-Fora deste arquivo até o produto pedir: diário de trades, alerta, live quote, filtro duro da janela 45–21 no seletor, último período dos indicadores = instante da raspagem (`docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`).
+Fora deste arquivo até o produto pedir: diário de trades, alerta, live quote, filtro duro da janela 45–21 no seletor.

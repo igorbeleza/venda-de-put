@@ -18,8 +18,29 @@ def test_yahoo_keeps_null_and_refuses_to_need_max_range():
         }]}
     }
     series = parse_yahoo_chart(payload, "PETR4")
-    assert series.closes == [40.0, None, 41.0]
+    assert series.closes == [40.0, None, 41.0, 41.75]
     assert series.preco == 41.75
+    assert series.closes[-1] == series.preco
+
+
+def test_yahoo_replaces_todays_bar_with_spot():
+    from datetime import datetime
+
+    from venda_de_put.tz import TZ
+
+    now = datetime(2026, 8, 17, 11, 0, tzinfo=TZ)
+    ts_yday = int(datetime(2026, 8, 14, 18, 0, tzinfo=TZ).timestamp())
+    ts_today = int(now.timestamp())
+    payload = {
+        "chart": {"result": [{
+            "meta": {"regularMarketPrice": 39.2, "fiftyTwoWeekHigh": 42.0, "fiftyTwoWeekLow": 30.0},
+            "timestamp": [ts_yday, ts_today],
+            "indicators": {"quote": [{"close": [41.0, 40.5]}]},
+        }]}
+    }
+    series = parse_yahoo_chart(payload, "PETR4", now=now)
+    assert series.closes == [41.0, 39.2]
+    assert series.preco == 39.2
 
 
 def test_yahoo_fixture_file():

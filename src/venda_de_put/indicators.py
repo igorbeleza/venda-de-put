@@ -1,5 +1,8 @@
 import math
+from datetime import datetime
 from typing import Optional, Sequence
+
+from venda_de_put.tz import TZ
 
 
 def _last_valid(values: Sequence[Optional[float]], n: int) -> Optional[list[float]]:
@@ -10,6 +13,34 @@ def _last_valid(values: Sequence[Optional[float]], n: int) -> Optional[list[floa
     if len(valid) < n:
         return None
     return valid[-n:]
+
+
+def apply_spot_as_last_period(
+    closes: Sequence[Optional[float]],
+    preco: Optional[float],
+    timestamps: Sequence[Optional[int]] | None = None,
+    now: datetime | None = None,
+) -> list[Optional[float]]:
+    """Último período da janela = à vista do instante. Não duplica o último close."""
+    out: list[Optional[float]] = list(closes)
+    if preco is None:
+        return out
+    spot = float(preco)
+    now = now or datetime.now(TZ)
+    today = now.astimezone(TZ).date() if now.tzinfo else now.replace(tzinfo=TZ).date()
+    last_is_today = False
+    if timestamps:
+        ts = timestamps[-1]
+        if ts is not None:
+            last_is_today = datetime.fromtimestamp(int(ts), TZ).date() == today
+    if last_is_today and out:
+        out[-1] = spot
+        return out
+    last_valid = next((v for v in reversed(out) if v is not None), None)
+    if last_valid is not None and last_valid == spot:
+        return out
+    out.append(spot)
+    return out
 
 
 def sma(values: Sequence[Optional[float]], n: int) -> Optional[float]:

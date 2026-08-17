@@ -1,20 +1,22 @@
-# Ideia futura — último período dos indicadores = instante da raspagem
+# Último período dos indicadores = instante da raspagem
 
-Não implementar. Estacionado até o produto pedir.
+Implementado. `apply_spot_as_last_period` em `indicators.py`; o parse do Yahoo aplica antes de gravar `closes`.
 
 ## Pedido
 
 Se a raspagem roda às 11h, o à vista daquele instante entra como **último período** da MM200, do IFR, da Boll Inf e do HV. Tendência e timing passam a comparar preço e indicadores na mesma base de tempo.
 
-## Hoje
+## Contrato
 
-`sources/yahoo.py` guarda duas coisas separadas: `closes` (barras diárias do chart `2y/1d`) e `preco` (`regularMarketPrice`).
+`preco` (`regularMarketPrice`) entra na janela:
 
-`scrape.py` calcula MM200 / IFR / Boll Inf / HV **só** em `closes`. Não substitui o último close pelo `preco` e não anexa o `preco` se a barra de hoje não veio. Timestamps das barras são ignorados.
+- barra de hoje existe (timestamp no dia da raspagem, `America/Sao_Paulo`) → troca o último close pelo à vista;
+- senão, anexa um período novo;
+- se o último close válido já é o à vista, não duplica (pregão fechado / fim de semana).
 
-O scoring usa o `preco` do instante contra esses indicadores. Se o Yahoo incluir a barra de hoje no `close[]`, pode coincidir por acaso da fonte — não é contrato.
+MM200, IFR, Boll Inf e HV usam essa série. `null` no meio continua buraco.
 
-Teste que trava a separação: `tests/test_sources.py` (`closes` terminam em 41,0; `preco` 41,75).
+Testes: `test_spot_*` em `tests/test_indicators.py`; `test_yahoo_replaces_todays_bar_with_spot` e último período = `preco` em `tests/test_sources.py`.
 
 ## Planilha
 
@@ -22,8 +24,6 @@ A planilha **não** tinha essa fórmula. Lia MM200, IFR e Bollinger ao vivo do g
 
 IV/HV nessa planilha não chegavam (códigos inválidos). História: `docs/archive/2026-08-prompts-iniciais/`, ADR `0003-ifr-wilder.md`.
 
-## Se um dia for feito
+## Efeito
 
-No parse (ou logo antes dos indicadores): se houver `preco`, trocar o close de hoje por ele quando a barra de hoje existir; senão anexar como período novo. Só então SMA / Wilder / Bollinger / HV.
-
-Deixa de ser MM200/Bollinger clássicos de fechamento. Recalcula tendência, timing e SINAL no mesmo scrape. Teste que falha primeiro: último período da série = `preco` do instante, mesmo quando o `close[]` do Yahoo diverge.
+Deixa de ser MM200/Bollinger clássicos de fechamento: queda forte no dia puxa a banda e o IFR no mesmo instante do `preco`. Scoring (tendência, timing, SINAL) já vê essa janela.
