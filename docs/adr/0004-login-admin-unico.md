@@ -31,10 +31,17 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
   Chave em `VENDA_DE_PUT_SECRET_KEY`; se ausente, uma chave é gerada em
   memória no start do processo — sessões não sobrevivem a um restart nesse
   caso, aceitável para uma ferramenta de administrador único.
-- **Escopo do gate**: `require_admin` protege `PUT /api/config`,
+- **Escopo do gate (API)**: `require_admin` protege `PUT /api/config`,
   `PUT /api/feriados`, `POST /api/scrape` e `GET /api/scrape/status`. Todo
   `GET` de leitura (dashboard, ativos, dados, setores, vencimentos,
-  feriados, instruções) continua público, sem exceção.
+  feriados, instruções) continua público, sem exceção — inclusive
+  `GET /api/feriados`.
+- **Escopo do gate (UI)**: mais restrito que a API. A aba **Feriados**
+  também some do menu pra quem não está logado (igual Config), não só o
+  formulário de edição — não faz sentido mostrar uma tabela de feriados sem
+  nenhuma ação possível. `GET /api/feriados` continua respondendo pra quem
+  bater direto na API sem sessão; só a navegação pela aba é que fica
+  admin-only.
 - **Raspagem sob demanda não importa `scrape.py` em `app.py`.** Essa
   fronteira já era uma decisão de arquitetura (`docs/sdd.md`: "API. Não
   importa `run_scrape`", garantida por

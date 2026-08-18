@@ -26,7 +26,8 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `scoring.py` | ScoreF setorial, tendência, timing, listas |
 | `premium.py` | `meta_30d * sqrt(dias/30)` |
 | `strike.py` | Strike de entrada no vencimento |
-| `calendar_b3.py` | Mensal = dia 15–21; feriado recua o efetivo |
+| `calendar_b3.py` | Mensal = dia 15–21; feriado recua o efetivo. Horizonte até `cfg.calendario_ate` (Config) |
+| `paths.py` | Resolve `data/`; `load_dotenv` lê `.env` sem sobrescrever env já exportada |
 | `scrape.py` | Orquestra fontes, cadeias só dos recomendados |
 | `snapshot.py` | Lê/grava JSON, campos novos com default |
 | `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso |
@@ -85,4 +86,10 @@ python -m venda_de_put serve --host 127.0.0.1 --port 0
 python -m pytest
 ```
 
-`VENDA_DE_PUT_DATA` sobrescreve o diretório `data/`.
+Windows: duplo-clique `iniciar-dashboard.bat` (porta 8765, ou aleatória via
+`scripts/pick_port.py` se estiver ocupada) — sobe e abre o navegador sozinho.
+
+`VENDA_DE_PUT_DATA` sobrescreve o diretório `data/`. `VENDA_DE_PUT_ADMIN_PASSWORD`
+e `VENDA_DE_PUT_SECRET_KEY` (login de admin, ADR 0004) vêm de `.env` na raiz
+(copie `.env.example`) — `paths.load_dotenv` carrega sozinho, sem exportar
+na mão.

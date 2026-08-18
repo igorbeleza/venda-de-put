@@ -6,10 +6,13 @@ Branch de integração: **`main`** (este dashboard Python). A árvore Go que ocu
 
 ```
 python -m pip install -e ".[dev]"
+cp .env.example .env   # preencha VENDA_DE_PUT_ADMIN_PASSWORD e VENDA_DE_PUT_SECRET_KEY p/ login de admin
 python -m venda_de_put scrape
 python -m venda_de_put serve --host 127.0.0.1 --port 8765
 python -m pytest
 ```
+
+Windows sem terminal: duplo-clique `iniciar-dashboard.bat`.
 
 Quem for implementar ou revisar com IA: comece em [AGENTS.md](AGENTS.md).
 

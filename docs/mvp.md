@@ -17,8 +17,9 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 - Strike de entrada no vencimento escolhido (ver `docs/sdd.md`).
 - Coleta Yahoo + OpLab + Fundamentus → snapshot em disco. Botão Atualizar relê o arquivo; não raspa.
 - CLI: `python -m venda_de_put scrape` e `serve`.
-- Dashboard, Ativos, Dados, Setores, Vencimentos, Feriados (leitura) e Instruções são públicos, sem login.
-- Login de administrador único (senha em `VENDA_DE_PUT_ADMIN_PASSWORD`, sessão por cookie assinado) gateia só a aba Config, a edição de feriados e o botão de raspar sob demanda — ver `docs/adr/0004-login-admin-unico.md`. Deploy não precisa mais de htpasswd no nginx para o site ser visto; pode manter por outros motivos.
+- Dashboard, Ativos, Dados, Setores, Vencimentos e Instruções são públicos, sem login.
+- Login de administrador único (senha em `VENDA_DE_PUT_ADMIN_PASSWORD`, sessão por cookie assinado) gateia as abas Config e Feriados (ambas somem do menu pra quem não está logado) e o botão de raspar sob demanda — ver `docs/adr/0004-login-admin-unico.md`. Deploy não precisa mais de htpasswd no nginx para o site ser visto; pode manter por outros motivos.
+- Horizonte do calendário de Vencimentos (`calendario_ate`, hoje 31/12/2027) é editável no Config, mesma tela do admin.
 
 ## Janela e entrada
 
