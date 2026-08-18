@@ -246,6 +246,22 @@ def _recalc(snap: Snapshot, cfg: AppConfig, universe: dict[str, str]) -> Snapsho
     )
 
 
+def _forwarded_prefix(request: Request) -> str:
+    raw = (request.headers.get("x-forwarded-prefix") or "").strip()
+    if not raw.startswith("/") or raw.startswith("//") or "://" in raw:
+        return ""
+    return raw.rstrip("/")
+
+
+def _cookie_path(request: Request) -> str:
+    return _forwarded_prefix(request) or "/"
+
+
+def _cookie_secure(request: Request) -> bool:
+    proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "").lower()
+    return proto == "https"
+
+
 def require_admin(request: Request) -> None:
     token = request.cookies.get("session")
     if not token or not verify_session_token(token):
@@ -539,8 +555,9 @@ def create_app(data_dir: Path) -> FastAPI:
             value=token,
             httponly=True,
             samesite="lax",
-            secure=(request.url.scheme == "https"),
+            secure=_cookie_secure(request),
             max_age=SESSION_MAX_AGE_SECONDS,
+            path=_cookie_path(request),
         )
         return {"admin": True}
 
@@ -550,7 +567,8 @@ def create_app(data_dir: Path) -> FastAPI:
             key="session",
             httponly=True,
             samesite="lax",
-            secure=(request.url.scheme == "https"),
+            secure=_cookie_secure(request),
+            path=_cookie_path(request),
         )
         return {"admin": False}
 

@@ -102,6 +102,64 @@ def test_api_login_sem_env_senha(data_dir: Path, monkeypatch):
     assert res.status_code == 401
 
 
+def _set_cookie_header(res) -> str:
+    return res.headers.get("set-cookie") or ""
+
+
+def test_login_cookie_path_raiz_sem_prefixo(data_dir: Path, monkeypatch):
+    monkeypatch.setenv("VENDA_DE_PUT_ADMIN_PASSWORD", "segredo")
+    client = TestClient(create_app(data_dir))
+    res = client.post("/api/login", json={"password": "segredo"})
+    cookie = _set_cookie_header(res)
+    assert "session=" in cookie
+    assert "Path=/venda-de-put" not in cookie
+    assert "Path=/" in cookie
+
+
+def test_login_cookie_path_segue_x_forwarded_prefix(data_dir: Path, monkeypatch):
+    monkeypatch.setenv("VENDA_DE_PUT_ADMIN_PASSWORD", "segredo")
+    client = TestClient(create_app(data_dir))
+    res = client.post(
+        "/api/login",
+        json={"password": "segredo"},
+        headers={"X-Forwarded-Prefix": "/venda-de-put"},
+    )
+    cookie = _set_cookie_header(res)
+    assert "Path=/venda-de-put" in cookie
+    assert "Secure" not in cookie
+
+
+def test_login_cookie_secure_atras_de_https(data_dir: Path, monkeypatch):
+    monkeypatch.setenv("VENDA_DE_PUT_ADMIN_PASSWORD", "segredo")
+    client = TestClient(create_app(data_dir))
+    res = client.post(
+        "/api/login",
+        json={"password": "segredo"},
+        headers={
+            "X-Forwarded-Prefix": "/venda-de-put",
+            "X-Forwarded-Proto": "https",
+        },
+    )
+    cookie = _set_cookie_header(res)
+    assert "Path=/venda-de-put" in cookie
+    assert "Secure" in cookie
+
+
+def test_logout_apaga_cookie_no_mesmo_prefixo(data_dir: Path, monkeypatch):
+    monkeypatch.setenv("VENDA_DE_PUT_ADMIN_PASSWORD", "segredo")
+    client = TestClient(create_app(data_dir))
+    client.post(
+        "/api/login",
+        json={"password": "segredo"},
+        headers={"X-Forwarded-Prefix": "/venda-de-put"},
+    )
+    res = client.post(
+        "/api/logout",
+        headers={"X-Forwarded-Prefix": "/venda-de-put"},
+    )
+    assert "Path=/venda-de-put" in _set_cookie_header(res)
+
+
 def test_api_login_sucesso_me_e_logout(data_dir: Path, monkeypatch):
     monkeypatch.setenv("VENDA_DE_PUT_ADMIN_PASSWORD", "segredo")
     app = create_app(data_dir)

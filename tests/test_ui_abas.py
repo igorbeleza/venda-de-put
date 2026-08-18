@@ -139,7 +139,7 @@ def test_instrucoes_renderizam_como_dashboard(data_dir):
     assert ".instrucoes-card" in css
     assert ".instrucoes-list" in css
     assert "white-space: pre-wrap" not in css
-    assert "bui29" in html
+    assert "bui30" in html
 
 
 def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
@@ -160,7 +160,7 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "data-label" in css or "attr(data-label)" in css
     assert "#eee6d4" in css
     js = client.get("/static/app.js").text
-    assert "/api/ativos" in js
+    assert "api/ativos" in js
     assert '["mm200", "MM200"]' in js
     assert '["ifr", "IFR"]' in js
     assert '["boll_inf", "Boll Inf"]' in js
@@ -172,7 +172,7 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert js.index('["iv", "IV"]') < js.index('["hv", "HV"]')
     assert '["iv_rank", "IV Rank"]' not in js
     assert '["iv_percentile", "IV Percentil"]' not in js
-    assert "/api/config" in js
+    assert "api/config" in js
     assert "mostrar" in js.lower() or "calculo" in js
     assert "ifr_max" in js
     assert "RTD" not in js

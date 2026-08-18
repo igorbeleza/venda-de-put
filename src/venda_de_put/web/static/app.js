@@ -197,7 +197,7 @@ function renderList(id, kind, rows, vencIso, meta30, alvo) {
 
 async function loadVencimentos() {
   const so = document.getElementById("so-mensais").checked ? 1 : 0;
-  const res = await fetch(`/api/vencimentos?so_mensais=${so}`);
+  const res = await fetch(`api/vencimentos?so_mensais=${so}`);
   const data = await res.json();
   const sel = document.getElementById("vencimento");
   const prev = sel.value;
@@ -213,7 +213,7 @@ async function loadDashboard() {
   const qs = new URLSearchParams();
   if (sel.value) qs.set("vencimento", sel.value);
   qs.set("so_mensais", document.getElementById("so-mensais").checked ? "1" : "0");
-  const res = await fetch("/api/dashboard?" + qs.toString());
+  const res = await fetch("api/dashboard?" + qs.toString());
   if (!res.ok) return;
   const data = await res.json();
   document.getElementById("carimbo").textContent = stampText(data.generated_at);
@@ -430,7 +430,7 @@ function bindSort(tableId, render) {
 
 async function loadAtivos() {
   const calc = document.getElementById("mostrar-calculo").checked ? 1 : 0;
-  const res = await fetch("/api/ativos?calculo=" + calc);
+  const res = await fetch("api/ativos?calculo=" + calc);
   const data = await res.json();
   ativosRows = data.ativos || [];
   renderAtivos();
@@ -473,7 +473,7 @@ function fmtDados(key, raw) {
 }
 
 async function loadDados() {
-  const res = await fetch("/api/dados");
+  const res = await fetch("api/dados");
   const data = await res.json();
   const c = data.carimbo;
   document.getElementById("carimbo-dados").textContent = c
@@ -493,7 +493,7 @@ function renderDados() {
 }
 
 async function loadSetores() {
-  const res = await fetch("/api/setores");
+  const res = await fetch("api/setores");
   const data = await res.json();
   setoresRows = data.setores || [];
   renderSetores();
@@ -585,7 +585,7 @@ function applyScrapeView(data) {
 
 async function syncScrapePanel() {
   try {
-    const res = await fetch("/api/scrape/status");
+    const res = await fetch("api/scrape/status");
     if (res.status === 401) return;
     if (!res.ok) return;
     const data = await res.json();
@@ -601,7 +601,7 @@ function loadScrapeUltima() {
 }
 
 async function loadConfig() {
-  const cfg = await (await fetch("/api/config")).json();
+  const cfg = await (await fetch("api/config")).json();
   const form = document.getElementById("form-config");
   for (const [k, v] of Object.entries(cfg)) {
     const el = form.elements[k];
@@ -652,7 +652,7 @@ function removeConfigForNonAdmin() {
 
 async function initializeAuth() {
   try {
-    const res = await fetch("/api/me");
+    const res = await fetch("api/me");
     const data = res.ok ? await res.json() : {};
     authState.admin = data.admin === true;
   } catch (_err) {
@@ -686,7 +686,7 @@ async function submitLogin(ev) {
   if (!input || !error || !submitBtn) return;
   submitBtn.disabled = true;
   try {
-    const res = await fetch("/api/login", {
+    const res = await fetch("api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: input.value }),
@@ -709,7 +709,7 @@ function loginAdmin() {
 }
 
 async function logoutAdmin() {
-  await fetch("/api/logout", { method: "POST" });
+  await fetch("api/logout", { method: "POST" });
   window.location.reload();
 }
 
@@ -728,7 +728,7 @@ async function pollScrapeStatus(attempt = 0) {
     return;
   }
   try {
-    const res = await fetch("/api/scrape/status");
+    const res = await fetch("api/scrape/status");
     if (res.status === 401) {
       scrapePolling = false;
       authState.admin = false;
@@ -790,7 +790,7 @@ async function startScrape(opts) {
     ? { passo: opts.passo }
     : { incluir_fundamentus: checkbox.checked };
   try {
-    const res = await fetch("/api/scrape", {
+    const res = await fetch("api/scrape", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -817,7 +817,7 @@ async function startScrape(opts) {
 async function saveConfig() {
   const form = document.getElementById("form-config");
   const body = {};
-  const src = await (await fetch("/api/config")).json();
+  const src = await (await fetch("api/config")).json();
   Object.assign(body, src);
   for (const el of form.elements) {
     if (!el.name) continue;
@@ -839,7 +839,7 @@ async function saveConfig() {
       body[el.name] = el.value;
     }
   }
-  await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  await fetch("api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   await loadDashboard();
 }
 
@@ -896,7 +896,7 @@ document.getElementById("calendario-ate-cal").addEventListener("click", () => {
 let vencimentosRows = [];
 
 async function loadVencimentosTable() {
-  const res = await fetch("/api/vencimentos");
+  const res = await fetch("api/vencimentos");
   const data = await res.json();
   vencimentosRows = data.vencimentos || [];
   renderVencimentos();
@@ -942,7 +942,7 @@ function renderVencimentos() {
 let feriadosCache = [];
 
 async function loadFeriados() {
-  const data = await (await fetch("/api/feriados")).json();
+  const data = await (await fetch("api/feriados")).json();
   feriadosCache = Array.isArray(data) ? data : (data.feriados || []);
   renderFeriados();
 }
@@ -980,7 +980,7 @@ function renderFeriados() {
 }
 
 async function putFeriados() {
-  await fetch("/api/feriados", {
+  await fetch("api/feriados", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(feriadosCache),
@@ -1121,7 +1121,7 @@ function renderInstrucoes(md) {
 }
 
 async function loadInstrucoes() {
-  const data = await (await fetch("/api/instrucoes")).json();
+  const data = await (await fetch("api/instrucoes")).json();
   document.getElementById("texto-instrucoes").innerHTML = renderInstrucoes(data.texto || "");
 }
 
@@ -1135,7 +1135,7 @@ document.getElementById("so-mensais").addEventListener("change", async () => {
 });
 
 document.getElementById("btn-atualizar").addEventListener("click", async () => {
-  await fetch("/api/refresh", { method: "POST" });
+  await fetch("api/refresh", { method: "POST" });
   await loadDashboard();
 });
 

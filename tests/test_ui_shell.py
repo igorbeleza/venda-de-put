@@ -40,11 +40,11 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert "function applyUiZoom" in js
     assert "function fitCards" in js
     assert "ZOOM_STEPS" in js
-    assert 'fetch("/api/me")' in js
+    assert 'fetch("api/me")' in js
     assert 'data-tab="config"' in html
     assert 'id="btn-raspar"' in html
     assert 'id="scrape-incluir-fundamentus"' in html
-    assert 'fetch("/api/scrape/status")' in js
+    assert 'fetch("api/scrape/status")' in js
     assert 'id="scrape-ultima"' in html
     scrape_panel = html.split('class="scrape-panel"', 1)[1].split("</div>", 1)[0]
     assert "Última raspagem" in scrape_panel
@@ -74,3 +74,19 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert "refreshVisibleData()" in js
     assert 'if (name === "dashboard") loadDashboard()' in js
     assert "authState.admin) syncScrapePanel()" in js or "authState.admin && syncScrapePanel()" in js
+
+
+def test_home_assets_e_api_sao_relativos(tmp_path):
+    """Sob /venda-de-put/ o navegador resolve static/ e api/ no prefixo, não na raiz do host."""
+    app = create_app(data_dir=tmp_path)
+    client = TestClient(app)
+    html = client.get("/").text
+    js = client.get("/static/app.js").text
+    assert 'href="static/app.css' in html
+    assert 'src="static/app.js' in html
+    assert 'href="/static/' not in html
+    assert 'src="/static/' not in html
+    assert 'fetch("/api/' not in js
+    assert "fetch(`/api/" not in js
+    assert 'fetch("api/' in js
+    assert "fetch(`api/" in js
