@@ -1,5 +1,14 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from venda_de_put.web.app import create_app
+
+
+def test_pyproject_empacota_html_css_js():
+    text = Path("pyproject.toml").read_text(encoding="utf-8")
+    assert "templates/*" in text
+    assert "static/*" in text
+    assert "instrucoes.md" in text
 
 
 def test_home_has_eight_tabs_and_narratives(tmp_path):
