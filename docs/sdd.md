@@ -24,7 +24,7 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `sources/fundamentus.py` | Tabela iso-8859-1, % em fração |
 | `indicators.py` | SMA, Wilder 14, Bollinger /n, HV log 21 |
 | `scoring.py` | ScoreF setorial, tendência, timing, listas |
-| `premium.py` | `meta_30d * sqrt(dias/30)` |
+| `premium.py` | `meta_30d * sqrt(dias/30)`. A meta gravada (padrão 1,15%) já inclui o ajuste da recompra com 70% do prêmio exaurido; o alvo econômico é 1% do strike em 30 dias |
 | `strike.py` | Strike de entrada no vencimento |
 | `calendar_b3.py` | Mensal = dia 15–21; feriado recua o efetivo. Horizonte até `cfg.calendario_ate` (Config) |
 | `paths.py` | Resolve `data/`; `load_dotenv` lê `.env` sem sobrescrever env já exportada |

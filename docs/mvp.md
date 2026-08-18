@@ -13,7 +13,7 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 - Oito abas: Dashboard, Ativos, Dados, Setores, Config, Vencimentos, Feriados, Instruções.
 - Três listas Top 10 no Dashboard (fundamentalista, técnico, combinado) com os textos narrativos fixos.
 - Seletor de vencimento. Padrão: próximo mensal. Toggle “só mensais”.
-- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config, na calculadora, em porcentagem (1,15%), gravada como fração.
+- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config, na calculadora, em porcentagem (1,15%), gravada como fração. O 1% que se busca no strike em 30 dias vira 1,15% porque a put é recomprada com 70% do prêmio exaurido (venda 1,00 → recompra 0,30), sem depender do prazo. O dashboard não registra nem fecha a operação; só escolhe strike com essa meta.
 - Aba Config / Raspagem: carimbo da última coleta, passos por fonte e retry do passo que falhou (com dependentes; ciclo inteiro se a coleta tem mais de 1 hora).
 - Strike de entrada no vencimento escolhido (ver `docs/sdd.md`).
 - Coleta Yahoo + OpLab + Fundamentus → snapshot em disco. Botão Atualizar relê o arquivo; não raspa.

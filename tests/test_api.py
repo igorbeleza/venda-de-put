@@ -334,6 +334,10 @@ def test_instrucoes_ifr_sem_profit(data_dir):
     assert "10" in text and "50" in text
     assert "Profit" not in text
     assert "RTD" not in text
+    assert "1%" in text
+    assert "1,15%" in text
+    assert "70%" in text
+    assert "recompr" in text.lower()
 
 
 def test_feriados_put_muda_vencimentos(data_dir):

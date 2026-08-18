@@ -14,7 +14,9 @@ As vendas de put são abertas com **45 a 21 dias corridos** até o vencimento.
 
 ## Prêmio
 
-O prêmio-alvo escala a meta de 30 dias pela raiz do prazo até o vencimento.
+A meta econômica é **1% do strike em 30 dias**. A put é recomprada quando o prêmio está **70% exaurido** — vendida a 1,00, recompra a 0,30 — independentemente do prazo que ainda falta. Por isso a meta gravada no Config é **1,15% do strike em 30 dias**: já traz o ajuste dessa saída antecipada.
+
+O prêmio-alvo do vencimento escolhido escala essa meta de 30 dias pela raiz do prazo (√(dias corridos / 30)).
 
 No vencimento escolhido, o prêmio da put é **último preço negociado / strike**. A entrada usa o **menor strike OTM** (mais distante do à vista) em que essa taxa seja **pelo menos** a meta do vencimento — maior segurança que ainda bate a meta. Só entra strike com último e volume no dia; último sem negócio é cotação velha.
 

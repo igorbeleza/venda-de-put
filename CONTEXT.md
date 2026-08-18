@@ -13,8 +13,12 @@ Faixa de 45 a 21 dias corridos até o vencimento em que a operação é aberta.
 _Avoid_: DTE livre, qualquer série
 
 **Meta 30d**:
-Taxa-alvo de prêmio para 30 dias corridos (`meta_premio_30d`, padrão 1,15%).
-_Avoid_: yield anual, ROI
+Taxa-alvo de prêmio para 30 dias corridos (`meta_premio_30d`, padrão 1,15% do strike). O ganho que se busca é 1% do strike em 30 dias; a put sai quando o prêmio está 70% exaurido (venda a 1,00, recompra a 0,30), sem olhar o prazo restante. O 1,15% já é esse ajuste.
+_Avoid_: yield anual, ROI; tratar 1,15% como se fosse o 1% sem o ajuste da recompra
+
+**Recompra (70% exaurido)**:
+Saída da venda de put quando restam 30% do prêmio recebido. Não é regra do motor (o dashboard não fecha posição); é o porquê da meta 30d ser 1,15%.
+_Avoid_: stop no preço do papel; fechar no vencimento como padrão do modelo
 
 **Prêmio-alvo**:
 Meta 30d escalada por √(dias corridos / 30) até o vencimento escolhido.
