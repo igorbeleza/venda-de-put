@@ -39,7 +39,7 @@ Estas decisões já foram tomadas com o usuário. **Não as reabra**; se achar q
 | Decisão | Escolha |
 |---|---|
 | Onde roda | Servidor próprio, acessível de qualquer lugar (incluindo celular) |
-| Hospedagem | **VPS Oracle Cloud já existente** — Ubuntu, `ubuntu@[VPS]`. ⚠️ **Já hospeda outros sites em nginx que não podem ser tocados.** Ver seção 2.1, que é inegociável |
+| Hospedagem | **VPS já existente** — Ubuntu. ⚠️ **Já hospeda outros sites em nginx que não podem ser tocados.** Ver seção 2.1, que é inegociável |
 | Acesso | **URL pública, sem senha** |
 | Raspagem | **Horários fixos**: 11h00, 13h00 e 16h00 (BRT), dias úteis. Fundamentus **2× por mês** (dias 1 e 15, às 7h00). Tudo configurável por variável de ambiente |
 | Botão Atualizar | **Nunca dispara raspagem.** Apenas relê o snapshot em cache e mostra o carimbo de quando foi coletado |
@@ -79,7 +79,7 @@ O servidor **já está em produção com outros sites servidos por nginx**. Esse
 
 **Porque o proxy passa pelo nginx que já está nas portas 80/443, nenhuma mudança de firewall é necessária** — nem no `iptables` local (o Ubuntu do Oracle Cloud vem com regras próprias que bloqueiam portas mesmo quando a Security List permite), nem no console da Oracle. Se o acesso fosse por porta direta, seriam necessárias as duas coisas. Evite isso.
 
-**Falta definir:** o `server_name`. Requer um subdomínio apontando por DNS para `[VPS]`. Pergunte ao usuário qual domínio usar antes de escrever o arquivo do nginx — não invente um.
+**Falta definir:** o `server_name`. Requer um subdomínio apontando por DNS para a VPS. Pergunte ao usuário qual domínio usar antes de escrever o arquivo do nginx — não invente um.
 
 **Sobre bloqueio de IP:** o IP é de datacenter, o que aumenta o risco de Fundamentus e OpLab bloquearem. Os horários fixos e o volume baixo (~86 requisições ao Yahoo e ~10-25 ao OpLab, três vezes ao dia) são a mitigação. Se o bloqueio acontecer, a alternativa é o script de raspagem rodar na máquina do usuário e publicar o JSON na VPS.
 

@@ -82,7 +82,7 @@ HTML e JS usam caminhos relativos (`static/…`, `fetch("api/…")`), não `/sta
 
 ## Armadilhas de fonte
 
-- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. O à vista do instante (`preco`) é o último período da série: troca a barra de hoje ou anexa. Ver `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`.
+- Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. O à vista do instante (`preco`) é o último período da série: troca a barra de hoje ou anexa. Ver `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`. Cotações ~15 minutos atrasadas em relação ao horário da raspagem (não é o pregão do carimbo).
 - OpLab cadeia: página grande (VALE3 ~5 MB). Não persistir o HTML.
 - Fundamentus: charset iso-8859-1; percentuais da tabela viram fração (0,10 = 10%).
 - Snapshot antigo sem `last`: até o próximo scrape a série fica sem liquidez. Campo opcional no load.

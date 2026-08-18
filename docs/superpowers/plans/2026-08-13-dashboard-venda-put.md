@@ -1743,6 +1743,6 @@ git commit -m "chore: units systemd, template nginx e runbook que não toca site
 
 ## Aberto até o deploy (não bloqueia executar Fases 1–2)
 
-- `SERVER_NAME` (subdomínio → `[VPS]`)
+- `SERVER_NAME` (subdomínio apontando para a VPS)
 - Senha do `htpasswd`
 - Confirmação do `nginx -T` / portas

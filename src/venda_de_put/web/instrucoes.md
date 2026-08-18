@@ -24,4 +24,6 @@ No vencimento escolhido, o prêmio da put é **último preço negociado / strike
 
 Os dados vêm do snapshot em disco (Yahoo, OpLab, Fundamentus), relido no botão Atualizar — sem terminal de corretora.
 
+As **cotações** (preço à vista e o que dele deriva: indicadores, strike, prêmio) estão **cerca de 15 minutos atrasadas** em relação ao horário da raspagem. O carimbo “Atualizado em …” é o instante da coleta, não o instante do pregão.
+
 Configuração de janelas (IFR, Bollinger, MM, horários de coleta) e a meta de prêmio para 30 dias (em porcentagem) ficam na aba Config. A mesma aba mostra o carimbo da última coleta e o resultado de cada fonte. Não há campos de terminal nem planilha auxiliar.

@@ -338,6 +338,8 @@ def test_instrucoes_ifr_sem_profit(data_dir):
     assert "1,15%" in text
     assert "70%" in text
     assert "recompr" in text.lower()
+    assert "15 minutos" in text
+    assert "raspagem" in text.lower()
 
 
 def test_feriados_put_muda_vencimentos(data_dir):

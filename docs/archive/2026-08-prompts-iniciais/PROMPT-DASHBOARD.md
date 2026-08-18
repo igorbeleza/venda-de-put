@@ -95,7 +95,7 @@ Isolar cada fonte atrás de uma interface (`PriceSource`, `IvSource`, `Fundament
 
 ## 4. Restrições da VPS — inegociável
 
-Servidor: Ubuntu, `ubuntu@[VPS]`. **Já hospeda outros sites em nginx.** Derrubar um deles é falha grave.
+Servidor: Ubuntu, VPS já existente. **Já hospeda outros sites em nginx.** Derrubar um deles é falha grave.
 
 **Proibido:**
 
@@ -117,7 +117,7 @@ Servidor: Ubuntu, `ubuntu@[VPS]`. **Já hospeda outros sites em nginx.** Derruba
 7. Backup antes: `sudo tar czf ~/nginx-backup-$(date +%F).tar.gz /etc/nginx`.
 8. Auth no próprio nginx (`auth_basic`) ou na app — mas a URL **não fica aberta**.
 
-**Ainda falta o usuário informar:** o hostname (subdomínio apontando para `[VPS]`). Sem isso, não se escreve o server block.
+**Ainda falta o usuário informar:** o hostname (subdomínio apontando para a VPS). Sem isso, não se escreve o server block.
 
 Plano B se o IP de datacenter for bloqueado: o scrape roda na máquina do usuário e publica o JSON na VPS. Desenhar as interfaces para isso ser possível; não implementar o plano B na v1.
 

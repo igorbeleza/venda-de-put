@@ -4,7 +4,7 @@ Implementado. `apply_spot_as_last_period` em `indicators.py`; o parse do Yahoo a
 
 ## Pedido
 
-Se a raspagem roda às 11h, o à vista daquele instante entra como **último período** da MM200, do IFR, da Boll Inf e do HV. Tendência e timing passam a comparar preço e indicadores na mesma base de tempo.
+Se a raspagem roda às 11h, o à vista daquele instante entra como **último período** da MM200, do IFR, da Boll Inf e do HV. Tendência e timing passam a comparar preço e indicadores na mesma base de tempo. Esse à vista (e as cotações da cadeia) está cerca de **15 minutos atrasado** em relação ao horário da raspagem.
 
 ## Contrato
 

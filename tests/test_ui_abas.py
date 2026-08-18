@@ -121,6 +121,8 @@ def test_instrucoes_corrigem_ifr_e_tiram_profit(data_dir):
     assert "1,15%" in text
     assert "70%" in text
     assert "recompr" in text.lower()
+    assert "15 minutos" in text
+    assert "raspagem" in text.lower()
 
 
 def test_instrucoes_renderizam_como_dashboard(data_dir):

@@ -61,7 +61,9 @@ _INSTRUCOES = (
     "Tendência: preço acima da média móvel de 200 períodos.\n"
     "Prêmio-alvo escala a meta de 30 dias pela raiz do prazo até o vencimento.\n"
     "Os dados vêm do snapshot em disco (Yahoo, OpLab, Fundamentus), "
-    "relido no botão Atualizar — sem terminal de corretora.\n"
+    "relido no botão Atualizar — sem terminal de corretora. "
+    "As cotações estão cerca de 15 minutos atrasadas em relação "
+    "ao horário da raspagem.\n"
 )
 
 

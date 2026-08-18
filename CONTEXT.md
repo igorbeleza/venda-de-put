@@ -111,8 +111,8 @@ _Avoid_: IV calculada aqui
 ## Estados
 
 **Snapshot**:
-JSON em disco com ativos, listas, fundamentos, cadeias e carimbos das fontes. O dashboard só lê isso.
-_Avoid_: banco, cache em memória como fonte
+JSON em disco com ativos, listas, fundamentos, cadeias e carimbos das fontes. O dashboard só lê isso. Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
+_Avoid_: banco, cache em memória como fonte; tratar o carimbo como pregão ao vivo
 
 **Cadeia**:
 Puts enxutas por ticker (vencimento, strike, bid, ask, último, símbolo, delta, poe, volume).
