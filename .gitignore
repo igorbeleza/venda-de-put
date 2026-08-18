@@ -36,5 +36,6 @@ data/snapshots/scrape_progress.json
 *.xls
 src/venda_de_put/web/static/prototype-fase2.html
 
-# Árvore Go que era a master em C:/dev/venda-de-put (zip local)
+# Zips locais de checkouts antigos — não vão para o git
 archive/main-antes-do-reset/
+archive/main-antes-do-merge-designs/

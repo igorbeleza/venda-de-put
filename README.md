@@ -2,7 +2,7 @@
 
 Seleção de ativos da B3 para venda de put: três listas, prêmio-alvo e strike no vencimento escolhido.
 
-Branch de integração: **`main`** (este dashboard Python). A árvore Go que ocupava a `master` antiga está no zip local `archive/main-antes-do-reset/` (fora do git).
+Branch de integração: **`main`** (este dashboard Python). Zips locais (fora do git): árvore Go em `archive/main-antes-do-reset/`; `main` de 18/08/2026 (antes do merge de `igorbeleza/designs`) em `archive/main-antes-do-merge-designs/`.
 
 ```
 python -m pip install -e ".[dev]"
