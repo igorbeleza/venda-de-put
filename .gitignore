@@ -39,3 +39,6 @@ src/venda_de_put/web/static/prototype-fase2.html
 # Zips locais de checkouts antigos — não vão para o git
 archive/main-antes-do-reset/
 archive/main-antes-do-merge-designs/
+
+# Units, template nginx e runbook — só na máquina (VPS já tem sites em produção)
+deploy/

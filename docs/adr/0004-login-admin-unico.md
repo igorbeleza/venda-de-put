@@ -3,7 +3,7 @@
 ## Contexto
 
 O MVP original (`docs/mvp.md`) dizia "sem login na app"; o controle de acesso
-era só o htpasswd do nginx (`deploy/nginx-venda-de-put.conf.template`),
+era só o htpasswd do nginx (template local, fora do git),
 protegendo o site inteiro para um único usuário (`igor`).
 
 Passa a existir um pedido explícito: o dashboard deve ficar totalmente
@@ -48,8 +48,8 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
   `tests/test_refresh_import_guard.py`). `POST /api/scrape` sobe
   `sys.executable -m venda_de_put scrape [--force-fundamentus true|false]
   [--from-step yahoo|oplab|fundamentus|oplab_cadeia]` como subprocesso via
-  `BackgroundTasks`, o mesmo mecanismo que `deploy/venda-de-put-scrape.timer`
-  já usa — a rota HTTP só troca o agendador (systemd) por um clique de admin,
+  `BackgroundTasks`, o mesmo mecanismo que o timer systemd local já usa —
+  a rota HTTP só troca o agendador (systemd) por um clique de admin,
   sem furar o processo único documentado. `app.py` pode ler
   `scrape_progress.py` (passos e regra das 1 hora); continua proibido
   importar `scrape.py` / `run_scrape`.
@@ -64,10 +64,9 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
   Fundamentus → Fundamentus+Cadeia; Cadeia → só Cadeia). Se
   `generated_at` da última coleta tem mais de 1 hora, o recorte é ignorado
   e roda o ciclo inteiro (`retry_completo` no status).
-- **nginx deixa de ser obrigatório para visitar o site.** O template
-  (`deploy/nginx-venda-de-put.conf.template`) não tem mais `auth_basic` por
-  padrão. Continua um proxy reverso simples; TLS/certbot é decisão à parte,
-  já coberta pelo runbook.
+- **nginx deixa de ser obrigatório para visitar o site.** O proxy reverso
+  não precisa de `auth_basic`. TLS/certbot é decisão à parte, no runbook
+  local.
 
 ## Alternativas descartadas
 
@@ -92,7 +91,7 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
 
 - Dois segredos novos em produção: `VENDA_DE_PUT_ADMIN_PASSWORD` e
   `VENDA_DE_PUT_SECRET_KEY`, via `.env` copiado pro servidor (não versionado
-  — ver `deploy/RUNBOOK.md`).
+  — ver runbook local em `deploy/`).
 - `GET /api/scrape/status` deixou de ser público durante a implementação
   (revisão apontou que o campo `erro` vaza stderr do subprocesso) — também
   gateado por `require_admin`.

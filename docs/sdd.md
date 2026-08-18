@@ -36,7 +36,7 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 
 ## Coleta
 
-- Horários e Fundamentus (dias 1 e 15) estão no Config. O timer systemd (`deploy/venda-de-put-scrape.timer`) é o relógio real; os campos do Config só dizem se o dado está velho e se o Fundamentus entra no ciclo.
+- Horários e Fundamentus (dias 1 e 15) estão no Config. O timer systemd (unit local, fora do git) é o relógio real; os campos do Config só dizem se o dado está velho e se o Fundamentus entra no ciclo.
 - CLI de scrape é a raspagem: `python -m venda_de_put scrape`. Admin dispara o mesmo comando como subprocesso (`POST /api/scrape`).
 - Painel Config / Raspagem: carimbo da última coleta, barra de passos (ok / falhou / raspando / pulado / sem dado) e botão de retry no passo que falhou.
 - Retry de um passo puxa os dependentes: Yahoo → os quatro; OpLab → OpLab + Cadeia; Fundamentus → Fundamentus + Cadeia; Cadeia → só Cadeia. Se a última raspagem tem mais de 1 hora, o retry vira o ciclo inteiro (`retry_completo`).

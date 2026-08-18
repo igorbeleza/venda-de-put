@@ -16,4 +16,4 @@ Windows sem terminal: duplo-clique `iniciar-dashboard.bat`.
 
 Quem for implementar ou revisar com IA: comece em [AGENTS.md](AGENTS.md).
 
-Produto: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md). Deploy: [deploy/RUNBOOK.md](deploy/RUNBOOK.md).
+Produto: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md).
