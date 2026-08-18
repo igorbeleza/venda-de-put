@@ -1087,6 +1087,10 @@ input.edit, .config-form input.edit {
   z-index: 100;
 }
 
+.modal-overlay[hidden] {
+  display: none;
+}
+
 .modal-card {
   background-color: var(--surface);
   background-image: var(--metal), var(--brush);
