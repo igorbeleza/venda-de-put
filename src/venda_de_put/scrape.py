@@ -36,8 +36,15 @@ def _around_hhmm(now: datetime, hhmm: str, window_min: int = 30) -> bool:
 
 
 def should_fetch_fundamentus(
-    now: datetime, cfg: AppConfig, previous: Snapshot | None
+    now: datetime,
+    cfg: AppConfig,
+    previous: Snapshot | None,
+    force_fundamentus: bool | None = None,
 ) -> bool:
+    if force_fundamentus is True:
+        return True
+    if force_fundamentus is False:
+        return False
     if previous is None or not previous.fundamentus_rows:
         return True
     local = now.astimezone(TZ) if now.tzinfo else now.replace(tzinfo=TZ)
@@ -67,6 +74,7 @@ def run_scrape(
     previous: Snapshot | None = None,
     chain_source: ChainSource | None = None,
     chain_pause: float = 0.0,
+    force_fundamentus: bool | None = None,
 ) -> Snapshot:
     tickers = list(universe.keys())
     stamps: list[SourceStamp] = []
@@ -109,7 +117,7 @@ def run_scrape(
                     )
 
     fund_rows: list[Fundamentals] = []
-    if should_fetch_fundamentus(now, cfg, previous):
+    if should_fetch_fundamentus(now, cfg, previous, force_fundamentus=force_fundamentus):
         try:
             fund_rows = fundamentals.fetch()
             stamps.append(SourceStamp("fundamentus", now, True, None, False))
@@ -246,7 +254,10 @@ def _fetch_chains(
     return out
 
 
-def cli_scrape(data_dir: Path | str | None = None) -> int:
+def cli_scrape(
+    data_dir: Path | str | None = None,
+    force_fundamentus: bool | None = None,
+) -> int:
     root = resolve_data_dir(data_dir)
     current = snapshot_current(root)
     history = snapshot_history(root)
@@ -276,6 +287,7 @@ def cli_scrape(data_dir: Path | str | None = None) -> int:
         previous=previous,
         chain_source=oplab,
         chain_pause=0.35,
+        force_fundamentus=force_fundamentus,
     )
     write_snapshot(snap, current, history, archive_if_1600=True)
     return 0

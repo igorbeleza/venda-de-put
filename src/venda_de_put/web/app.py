@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from venda_de_put.auth import (
+    SESSION_MAX_AGE_SECONDS,
+    check_password,
+    create_session_token,
+    verify_session_token,
+)
 
 from venda_de_put.calendar_b3 import (
     build_calendar,
@@ -199,6 +208,12 @@ def _recalc(snap: Snapshot, cfg: AppConfig, universe: dict[str, str]) -> Snapsho
     )
 
 
+def require_admin(request: Request) -> None:
+    token = request.cookies.get("session")
+    if not token or not verify_session_token(token):
+        raise HTTPException(401, "não autorizado")
+
+
 def create_app(data_dir: Path) -> FastAPI:
     data_dir = Path(data_dir)
     app = FastAPI()
@@ -210,6 +225,25 @@ def create_app(data_dir: Path) -> FastAPI:
     app.state.history_dir = snapshot_history(data_dir)
     app.state.snapshot: Optional[Snapshot] = None
     app.state.snapshot_mtime: Optional[float] = None
+    app.state.scrape_process: Optional[subprocess.Popen] = None
+    app.state.scrape_error: Optional[str] = None
+
+    def _is_scrape_running() -> bool:
+        proc = app.state.scrape_process
+        return proc is not None and proc.poll() is None
+
+    def _wait_for_scrape(process: subprocess.Popen) -> None:
+        try:
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                app.state.scrape_error = (stderr or "").strip() or f"processo saiu com código {process.returncode}"
+            else:
+                app.state.scrape_error = None
+                if app.state.snapshot_path.is_file():
+                    app.state.snapshot = read_snapshot(app.state.snapshot_path)
+                    app.state.snapshot_mtime = app.state.snapshot_path.stat().st_mtime
+        except Exception as e:
+            app.state.scrape_error = str(e)
 
     legacy = data_dir / "current.json"
     if not app.state.snapshot_path.is_file() and legacy.is_file():
@@ -337,7 +371,8 @@ def create_app(data_dir: Path) -> FastAPI:
         return _jsonable(cfg)
 
     @app.put("/api/config")
-    def put_config(body: dict):
+    def put_config(body: dict, request: Request):
+        require_admin(request)
         if not isinstance(body, dict):
             raise HTTPException(400, "objeto de config esperado")
         required_num = {
@@ -401,6 +436,7 @@ def create_app(data_dir: Path) -> FastAPI:
 
     @app.put("/api/feriados")
     async def put_feriados(request: Request):
+        require_admin(request)
         body = await request.json()
         items = body.get("feriados") if isinstance(body, dict) and "feriados" in body else body
         if not isinstance(items, list):
@@ -435,6 +471,98 @@ def create_app(data_dir: Path) -> FastAPI:
     @app.get("/")
     def home():
         return FileResponse(templates_dir / "index.html")
+
+    @app.post("/api/login")
+    def login(body: dict, request: Request, response: Response):
+        if not isinstance(body, dict) or not isinstance(body.get("password"), str):
+            raise HTTPException(400, "campo 'password' esperado")
+        if not check_password(body["password"]):
+            raise HTTPException(401, "senha incorreta")
+        token = create_session_token()
+        response.set_cookie(
+            key="session",
+            value=token,
+            httponly=True,
+            samesite="lax",
+            secure=(request.url.scheme == "https"),
+            max_age=SESSION_MAX_AGE_SECONDS,
+        )
+        return {"admin": True}
+
+    @app.post("/api/logout")
+    def logout(request: Request, response: Response):
+        response.delete_cookie(
+            key="session",
+            httponly=True,
+            samesite="lax",
+            secure=(request.url.scheme == "https"),
+        )
+        return {"admin": False}
+
+    @app.get("/api/me")
+    def me(request: Request):
+        token = request.cookies.get("session")
+        return {"admin": bool(token and verify_session_token(token))}
+
+    @app.post("/api/scrape")
+    async def post_scrape(
+        request: Request,
+        background_tasks: BackgroundTasks,
+    ):
+        require_admin(request)
+
+        incluir_fundamentus = None
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and "incluir_fundamentus" in body:
+                incluir_fundamentus = body["incluir_fundamentus"]
+        except Exception:
+            pass
+
+        if _is_scrape_running():
+            raise HTTPException(409, "raspagem já em andamento")
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "venda_de_put",
+            "scrape",
+            "--data-dir",
+            str(app.state.data_dir),
+        ]
+        if incluir_fundamentus is True:
+            cmd.extend(["--force-fundamentus", "true"])
+        elif incluir_fundamentus is False:
+            cmd.extend(["--force-fundamentus", "false"])
+
+        app.state.scrape_error = None
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        app.state.scrape_process = proc
+        background_tasks.add_task(_wait_for_scrape, proc)
+        return {"status": "running"}
+
+    @app.get("/api/scrape/status")
+    def scrape_status(request: Request):
+        require_admin(request)
+        running = _is_scrape_running()
+        status = "running" if running else "idle"
+        gen_at = None
+        if app.state.snapshot_path.is_file():
+            try:
+                snap = get_snap()
+                gen_at = snap.generated_at.isoformat()
+            except Exception:
+                pass
+        return {
+            "status": status,
+            "generated_at": gen_at,
+            "erro": app.state.scrape_error,
+        }
 
     @app.post("/api/refresh")
     def refresh():

@@ -226,3 +226,49 @@ def test_fundamentus_fetched_on_first_scrape_when_no_previous():
     snap = run_scrape(price, iv, fund, AppConfig(), universe, set(), now, previous=None)
     assert fund.calls == 1
     assert snap.fundamentus_rows == fund.rows
+
+
+def test_force_fundamentus_true_forces_fetch():
+    price, iv, fund, universe, now16 = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now16)
+    assert fund.calls == 1
+
+    # Mesmo dia e horário fora da janela, com previous existente: normal seria pular
+    later = datetime(2026, 8, 15, 11, 0, tzinfo=TZ)
+    fund2 = FakeFund(fund.rows)
+    second = run_scrape(
+        price, iv, fund2, AppConfig(), universe, set(), later,
+        previous=first, force_fundamentus=True,
+    )
+    assert fund2.calls == 1
+
+
+def test_force_fundamentus_false_skips_fetch():
+    price, iv, fund, universe, _ = _petr_inputs()
+    # Dia 1 às 07:00 (janela normal de fetch do fundamentus)
+    now1 = datetime(2026, 8, 1, 7, 0, tzinfo=TZ)
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now1)
+    assert fund.calls == 1
+
+    fund2 = FakeFund(fund.rows)
+    second = run_scrape(
+        price, iv, fund2, AppConfig(), universe, set(), now1,
+        previous=first, force_fundamentus=False,
+    )
+    assert fund2.calls == 0
+    assert second.fundamentus_rows == first.fundamentus_rows
+
+
+def test_force_fundamentus_none_keeps_default_behavior():
+    price, iv, fund, universe, now16 = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now16)
+    assert fund.calls == 1
+
+    later = datetime(2026, 8, 15, 11, 0, tzinfo=TZ)
+    fund2 = FakeFund(fund.rows)
+    second = run_scrape(
+        price, iv, fund2, AppConfig(), universe, set(), later,
+        previous=first, force_fundamentus=None,
+    )
+    assert fund2.calls == 0
+

@@ -8,10 +8,12 @@ def main(argv=None):
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--data-dir", default=None)
+    p.add_argument("--force-fundamentus", choices=["true", "false"], default=None)
     args = p.parse_args(argv)
     if args.cmd == "scrape":
         from venda_de_put.scrape import cli_scrape
-        return cli_scrape(data_dir=args.data_dir)
+        force_fundamentus = None if args.force_fundamentus is None else (args.force_fundamentus == "true")
+        return cli_scrape(data_dir=args.data_dir, force_fundamentus=force_fundamentus)
     if args.cmd == "smoke":
         from venda_de_put.smoke import cli_smoke
         return cli_smoke()

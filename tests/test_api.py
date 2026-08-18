@@ -12,9 +12,10 @@ from datetime import date
 from venda_de_put.models import CandleSeries, Fundamentals, IvPoint, PutQuote
 from venda_de_put.scrape import run_scrape
 from venda_de_put.snapshot import write_snapshot
+from venda_de_put.auth import create_session_token
+from venda_de_put.models import Vencimento
 from venda_de_put.tz import TZ
 from venda_de_put.web.app import create_app, label_vencimento
-from venda_de_put.models import Vencimento
 
 
 class FakePrice:
@@ -186,6 +187,7 @@ def test_config_put_recalculates_without_scrape(data_dir, monkeypatch):
     )
     app = create_app(data_dir=data_dir)
     client = TestClient(app)
+    client.cookies.set("session", create_session_token())
     before = client.get("/api/dashboard").json()
     cfg = client.get("/api/config").json()
     cfg["ifr_max"] = 45
@@ -209,6 +211,7 @@ def test_instrucoes_ifr_sem_profit(data_dir):
 def test_feriados_put_muda_vencimentos(data_dir):
     app = create_app(data_dir=data_dir)
     client = TestClient(app)
+    client.cookies.set("session", create_session_token())
     before = client.get("/api/vencimentos").json()
     feriados = client.get("/api/feriados").json()
     items = feriados if isinstance(feriados, list) else feriados.get("feriados", feriados)
@@ -272,6 +275,7 @@ def test_ativos_roe_is_fundamentals_not_rank(data_dir):
 def test_config_put_rejects_missing_and_non_numeric(data_dir):
     app = create_app(data_dir=data_dir)
     client = TestClient(app)
+    client.cookies.set("session", create_session_token())
     bad = client.put("/api/config", json={"ifr_max": 40})
     assert bad.status_code == 400
     cfg = client.get("/api/config").json()
@@ -283,6 +287,7 @@ def test_config_put_rejects_missing_and_non_numeric(data_dir):
 def test_feriados_put_rejects_unparseable_date(data_dir):
     app = create_app(data_dir=data_dir)
     client = TestClient(app)
+    client.cookies.set("session", create_session_token())
     r = client.put("/api/feriados", json=[{"date": "ontem", "descricao": "x"}])
     assert r.status_code == 400
 

@@ -61,15 +61,18 @@
     </nav>
   </aside>
   <div class="main">
-    <header class="tabs" role="tablist">
+    <header class="tabs">
+      <div class="tab-list" role="tablist">
       <button type="button" class="tab active" data-tab="dashboard">Dashboard</button>
       <button type="button" class="tab" data-tab="ativos">Ativos</button>
       <button type="button" class="tab" data-tab="dados">Dados</button>
       <button type="button" class="tab" data-tab="setores">Setores</button>
-      <button type="button" class="tab" data-tab="config">Config</button>
+      <button type="button" class="tab" data-tab="config" hidden>Config</button>
       <button type="button" class="tab" data-tab="vencimentos">Vencimentos</button>
       <button type="button" class="tab" data-tab="feriados">Feriados</button>
       <button type="button" class="tab" data-tab="instrucoes">Instruções</button>
+      </div>
+      <div id="auth-control" class="auth-control" aria-live="polite"></div>
     </header>
     <section id="pane-dashboard" class="pane active">
       <div class="toolbar">
@@ -168,6 +171,12 @@
         <label>Horários scrape <input class="edit" name="scrape_times" type="text"></label>
         <label>Dias Fundamentus <input class="edit" name="fundamentus_days" type="text"></label>
         <label>Hora Fundamentus <input class="edit" name="fundamentus_time" type="text"></label>
+        <div class="scrape-panel">
+          <h3>Raspagem</h3>
+          <label class="toggle"><input type="checkbox" id="scrape-incluir-fundamentus"> Incluir Fundamentus</label>
+          <button type="button" id="btn-raspar">Raspar agora</button>
+          <p id="scrape-status" class="scrape-status" aria-live="polite"></p>
+        </div>
         <button type="submit" id="btn-salvar-config">Salvar</button>
       </form>
     </section>

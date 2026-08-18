@@ -40,3 +40,8 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert "function applyUiZoom" in js
     assert "function fitCards" in js
     assert "ZOOM_STEPS" in js
+    assert 'fetch("/api/me")' in js
+    assert 'data-tab="config"' in html
+    assert 'id="btn-raspar"' in html
+    assert 'id="scrape-incluir-fundamentus"' in html
+    assert 'fetch("/api/scrape/status")' in js

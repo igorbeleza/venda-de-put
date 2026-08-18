@@ -8,6 +8,9 @@ User=venda-de-put
 Group=venda-de-put
 WorkingDirectory=/opt/venda-de-put
 Environment=VENDA_DE_PUT_DATA=/opt/venda-de-put/data
+# VENDA_DE_PUT_ADMIN_PASSWORD e VENDA_DE_PUT_SECRET_KEY (ADR 0004) ficam
+# num EnvironmentFile fora do git — ver deploy/RUNBOOK.md.
+EnvironmentFile=-/opt/venda-de-put/etc/venda-de-put.env
 ExecStart=/opt/venda-de-put/.venv/bin/python -m venda_de_put serve --host 127.0.0.1 --port 8765
 Restart=on-failure
 

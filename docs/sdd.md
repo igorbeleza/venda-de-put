@@ -29,7 +29,8 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `calendar_b3.py` | Mensal = dia 15–21; feriado recua o efetivo |
 | `scrape.py` | Orquestra fontes, cadeias só dos recomendados |
 | `snapshot.py` | Lê/grava JSON, campos novos com default |
-| `web/app.py` | API. Não importa `run_scrape` |
+| `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso |
+| `auth.py` | Login de admin único: senha via env, cookie de sessão HMAC |
 
 ## Coleta
 

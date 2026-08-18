@@ -370,6 +370,8 @@ a { color: var(--verde); }
     inset 0 -1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
+.tab-list { display: flex; gap: 2px; min-width: 0; overflow-x: auto; flex: 1; }
+
 .tab {
   border: 0;
   background: transparent;
@@ -1050,6 +1052,14 @@ input.edit, .config-form input.edit {
   min-width: 140px;
 }
 .calc-out { font-weight: 650; color: var(--hl-ink); font-size: 16px; display: inline-block; }
+
+.auth-control { flex-shrink: 0; display: flex; align-items: center; padding: 0 8px; }
+.auth-link { border: 0; background: transparent; color: var(--ink-2); cursor: pointer; font: inherit; font-size: 0.78rem; padding: 4px 6px; }
+.auth-link:hover { color: var(--ink); text-decoration: underline; }
+.scrape-panel { grid-column: 1 / -1; display: grid; gap: 10px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius: var(--radius-card); background: var(--surface); }
+.scrape-panel h3 { margin: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
+.scrape-panel .toggle { justify-content: flex-start; }
+.scrape-status { margin: 0; min-height: 1.2em; color: var(--ink-2); font-size: 0.86rem; }
 
 @media (max-width: 720px) {
   html { font-size: 16px; }

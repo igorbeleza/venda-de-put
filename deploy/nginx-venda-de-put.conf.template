@@ -1,8 +1,8 @@
 server {
     listen 80;
     server_name SERVER_NAME;
-    auth_basic "venda de put";
-    auth_basic_user_file /opt/venda-de-put/etc/htpasswd;
+    # Site público (ADR 0004) — sem auth_basic. O login de administrador
+    # é da própria app (aba Config, feriados, raspar agora), não do nginx.
 
     location / {
         proxy_pass http://127.0.0.1:8765;

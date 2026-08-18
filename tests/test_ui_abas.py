@@ -10,6 +10,7 @@ from venda_de_put.config import AppConfig, save_config
 from venda_de_put.models import CandleSeries, Fundamentals
 from venda_de_put.scrape import run_scrape
 from venda_de_put.snapshot import write_snapshot
+from venda_de_put.auth import create_session_token
 from venda_de_put.tz import TZ
 from venda_de_put.web.app import create_app
 
@@ -96,6 +97,7 @@ def test_config_put_recalculates_without_scrape(tmp_path, monkeypatch, data_dir)
     )
     app = create_app(data_dir=tmp_path)
     client = TestClient(app)
+    client.cookies.set("session", create_session_token())
     before = client.get("/api/dashboard").json()
     cfg = client.get("/api/config").json()
     cfg["ifr_max"] = 45

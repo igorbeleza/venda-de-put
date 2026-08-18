@@ -10,6 +10,8 @@ const fmtDateTime = new Intl.DateTimeFormat("pt-BR", {
   hour12: false,
 });
 
+const authState = { admin: false };
+
 const GRUPO_ABREV = {
   "Utilities (Energia/Saneamento)": "Utilities",
   "Mineração e Siderurgia": "Mineração",
@@ -501,6 +503,140 @@ async function loadConfig() {
   paintCalcAlvo();
 }
 
+function renderAuthControl() {
+  const host = document.getElementById("auth-control");
+  if (!host) return;
+  host.innerHTML = authState.admin
+    ? '<button type="button" class="auth-link" id="btn-logout">Sair</button>'
+    : '<button type="button" class="auth-link" id="btn-login">Entrar</button>';
+  const login = document.getElementById("btn-login");
+  if (login) login.addEventListener("click", loginAdmin);
+  const logout = document.getElementById("btn-logout");
+  if (logout) logout.addEventListener("click", logoutAdmin);
+}
+
+function removeConfigForNonAdmin() {
+  if (authState.admin) return;
+  const tab = document.querySelector('[data-tab="config"]');
+  const pane = document.getElementById("pane-config");
+  if (tab) tab.hidden = true;
+  if (pane) pane.hidden = true;
+  if (tab?.classList.contains("active")) activateTab("dashboard");
+}
+
+async function initializeAuth() {
+  try {
+    const res = await fetch("/api/me");
+    const data = res.ok ? await res.json() : {};
+    authState.admin = data.admin === true;
+  } catch (_err) {
+    authState.admin = false;
+  }
+  const configTab = document.querySelector('[data-tab="config"]');
+  if (authState.admin && configTab) configTab.hidden = false;
+  removeConfigForNonAdmin();
+  renderAuthControl();
+}
+
+async function loginAdmin() {
+  const password = window.prompt("Senha de administrador:");
+  if (password === null) return;
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) {
+      window.alert(res.status === 401 ? "Senha incorreta." : `Erro ao entrar (HTTP ${res.status}), tente novamente.`);
+      return;
+    }
+    window.location.reload();
+  } catch (_err) {
+    window.alert("Não foi possível conectar, tente novamente.");
+  }
+}
+
+async function logoutAdmin() {
+  await fetch("/api/logout", { method: "POST" });
+  window.location.reload();
+}
+
+const MAX_SCRAPE_POLLS = 300;
+
+async function pollScrapeStatus(attempt = 0) {
+  const statusEl = document.getElementById("scrape-status");
+  const button = document.getElementById("btn-raspar");
+  if (!statusEl || !button) return;
+  if (attempt >= MAX_SCRAPE_POLLS) {
+    button.disabled = false;
+    statusEl.textContent = "Tempo esgotado, verifique manualmente.";
+    return;
+  }
+  try {
+    const res = await fetch("/api/scrape/status");
+    if (res.status === 401) {
+      authState.admin = false;
+      removeConfigForNonAdmin();
+      renderAuthControl();
+      button.disabled = false;
+      statusEl.textContent = "Sessão expirada.";
+      return;
+    }
+    const data = await res.json();
+    if (res.ok && data.status === "running") {
+      statusEl.textContent = "raspando...";
+      window.setTimeout(() => pollScrapeStatus(attempt + 1), 2000);
+      return;
+    }
+    button.disabled = false;
+    if (!res.ok) {
+      statusEl.textContent = `Não foi possível consultar a raspagem (HTTP ${res.status}).`;
+    } else if (data.status === "idle") {
+      statusEl.textContent = data.erro
+        ? `Erro: ${data.erro}`
+        : (data.generated_at ? `Concluída em ${fmtDateTime.format(new Date(data.generated_at))}` : "Raspagem concluída.");
+    } else {
+      statusEl.textContent = "Não foi possível consultar a raspagem.";
+    }
+  } catch (_err) {
+    button.disabled = false;
+    statusEl.textContent = "Não foi possível consultar a raspagem, tente novamente.";
+  }
+}
+
+async function startScrape() {
+  const button = document.getElementById("btn-raspar");
+  const statusEl = document.getElementById("scrape-status");
+  const checkbox = document.getElementById("scrape-incluir-fundamentus");
+  if (!button || !statusEl || !checkbox) return;
+  button.disabled = true;
+  statusEl.textContent = "raspando...";
+  try {
+    const res = await fetch("/api/scrape", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incluir_fundamentus: checkbox.checked }),
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        authState.admin = false;
+        removeConfigForNonAdmin();
+        renderAuthControl();
+        statusEl.textContent = "Sessão expirada.";
+      } else {
+        statusEl.textContent = res.status === 409 ? "Já existe uma raspagem em andamento." : `Não foi possível iniciar a raspagem (HTTP ${res.status}).`;
+      }
+      button.disabled = false;
+      return;
+    }
+    await pollScrapeStatus();
+  } catch (_err) {
+    button.disabled = false;
+    statusEl.textContent = "Não foi possível iniciar a raspagem, tente novamente.";
+  }
+}
+
 async function saveConfig() {
   const form = document.getElementById("form-config");
   const body = {};
@@ -529,6 +665,7 @@ document.getElementById("form-config").addEventListener("submit", (e) => {
 document.getElementById("form-config").addEventListener("focusout", (e) => {
   if (e.target && e.target.classList.contains("edit") && e.target.id !== "calc-dias") saveConfig();
 });
+document.getElementById("btn-raspar").addEventListener("click", startScrape);
 document.getElementById("calc-meta-30d").addEventListener("input", paintCalcAlvo);
 document.getElementById("calc-dias").addEventListener("input", paintCalcAlvo);
 
@@ -761,4 +898,4 @@ document.getElementById("zoom-reset").addEventListener("click", () => applyUiZoo
 window.addEventListener("resize", fitCards);
 applyUiZoom(currentZoom());
 
-loadVencimentos().then(loadDashboard);
+initializeAuth().finally(() => loadVencimentos().then(loadDashboard));

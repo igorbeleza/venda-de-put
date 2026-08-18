@@ -34,7 +34,8 @@ Confirmar: porta 8765 livre (ou escolher outra alta livre), hosts já servidos p
 Aguardar confirmação e que o usuário informe:
 
 - `SERVER_NAME` (subdomínio apontando para a VPS)
-- senha do `htpasswd` (a senha **não** vai para o git)
+- senha do administrador único (`VENDA_DE_PUT_ADMIN_PASSWORD`, ADR 0004 — a
+  senha **não** vai para o git)
 
 ### 3. Backup do nginx
 
@@ -64,15 +65,29 @@ sudo cp deploy/venda-de-put-scrape.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
 
-### 5. htpasswd
+### 5. Segredos do login de admin (ADR 0004)
+
+O site é público; só a aba Config, feriados e a raspagem manual pedem login
+de administrador. Credenciais ficam num `EnvironmentFile` fora do git, nunca
+no unit do systemd:
 
 ```bash
 sudo mkdir -p /opt/venda-de-put/etc
-sudo htpasswd -c /opt/venda-de-put/etc/htpasswd igor
-# ou o nome de usuário que o usuário quiser
-sudo chown root:www-data /opt/venda-de-put/etc/htpasswd
-sudo chmod 640 /opt/venda-de-put/etc/htpasswd
+sudo tee /opt/venda-de-put/etc/venda-de-put.env > /dev/null <<'EOF'
+VENDA_DE_PUT_ADMIN_PASSWORD=SENHA_DO_ADMIN
+VENDA_DE_PUT_SECRET_KEY=CHAVE_ALEATORIA_LONGA
+EOF
+sudo chown root:venda-de-put /opt/venda-de-put/etc/venda-de-put.env
+sudo chmod 640 /opt/venda-de-put/etc/venda-de-put.env
 ```
+
+Gerar `VENDA_DE_PUT_SECRET_KEY` com `openssl rand -hex 32` (ou equivalente) —
+sem essa variável fixa, o processo gera uma chave em memória a cada start e
+a sessão do admin cai a cada restart/deploy.
+
+Htpasswd/`auth_basic` do nginx não é mais necessário só para visitar o site
+(o template não traz mais essa diretiva). Se o usuário quiser mantê-lo por
+outro motivo, é uma decisão à parte, fora deste runbook.
 
 ### 6. Arquivo nginx **novo** apenas
 
@@ -117,18 +132,28 @@ curl -I https://SITE_ANTIGO
 
 Deve continuar 200/301 como antes.
 
-### 10. Auth e dashboard
+### 10. Site público e login de admin
 
-Sem senha → `401`:
+Dashboard sem qualquer credencial → `200` e HTML do Dashboard (site público,
+ADR 0004):
 
 ```bash
 curl -I http://SERVER_NAME
 ```
 
-Com senha → `200` e HTML do Dashboard:
+Config sem sessão → `401` na escrita; login de admin → cookie de sessão e
+`200`:
 
 ```bash
-curl -I -u igor:SENHA http://SERVER_NAME
+curl -i -X PUT http://SERVER_NAME/api/config -H 'Content-Type: application/json' -d '{}'
+# 401 esperado
+
+curl -i -c /tmp/venda-de-put-cookie -X POST http://SERVER_NAME/api/login \
+  -H 'Content-Type: application/json' -d '{"password":"SENHA_DO_ADMIN"}'
+# 200 esperado, Set-Cookie: session=...
+
+curl -i -b /tmp/venda-de-put-cookie http://SERVER_NAME/api/me
+# {"admin": true}
 ```
 
 ### 11. Serviços
