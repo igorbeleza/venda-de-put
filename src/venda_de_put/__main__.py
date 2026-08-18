@@ -1,8 +1,11 @@
 import argparse
 import sys
 
+from venda_de_put.paths import load_dotenv
+
 
 def main(argv=None):
+    load_dotenv()
     p = argparse.ArgumentParser()
     p.add_argument("cmd", choices=["scrape", "serve", "smoke"])
     p.add_argument("--host", default="127.0.0.1")

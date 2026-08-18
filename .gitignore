@@ -21,6 +21,7 @@ Thumbs.db
 # Segredos e ambiente (nunca versionar)
 .env
 .env.*
+!.env.example
 *.pem
 htpasswd
 **/htpasswd

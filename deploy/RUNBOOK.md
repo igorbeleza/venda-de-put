@@ -68,22 +68,24 @@ sudo systemctl daemon-reload
 ### 5. Segredos do login de admin (ADR 0004)
 
 O site é público; só a aba Config, feriados e a raspagem manual pedem login
-de administrador. Credenciais ficam num `EnvironmentFile` fora do git, nunca
-no unit do systemd:
+de administrador. A senha e a chave de sessão vivem só no `.env` local do
+usuário (nunca no git — copie `.env.example` pra `.env` e preencha,
+`VENDA_DE_PUT_SECRET_KEY` com `openssl rand -hex 32` ou equivalente). Sem
+essa chave fixa, o processo gera uma em memória a cada start e a sessão do
+admin cai a cada restart/deploy.
+
+Quando for deployar, o **mesmo** `.env` local vai pro `WorkingDirectory` do
+serviço (`/opt/venda-de-put`) — o app carrega sozinho
+(`venda_de_put.paths.load_dotenv`), sem precisar de `EnvironmentFile` no
+systemd:
 
 ```bash
-sudo mkdir -p /opt/venda-de-put/etc
-sudo tee /opt/venda-de-put/etc/venda-de-put.env > /dev/null <<'EOF'
-VENDA_DE_PUT_ADMIN_PASSWORD=SENHA_DO_ADMIN
-VENDA_DE_PUT_SECRET_KEY=CHAVE_ALEATORIA_LONGA
-EOF
-sudo chown root:venda-de-put /opt/venda-de-put/etc/venda-de-put.env
-sudo chmod 640 /opt/venda-de-put/etc/venda-de-put.env
+scp .env venda-de-put@SERVER_NAME:/opt/venda-de-put/.env
+ssh venda-de-put@SERVER_NAME chmod 600 /opt/venda-de-put/.env
 ```
 
-Gerar `VENDA_DE_PUT_SECRET_KEY` com `openssl rand -hex 32` (ou equivalente) —
-sem essa variável fixa, o processo gera uma chave em memória a cada start e
-a sessão do admin cai a cada restart/deploy.
+(rodar como o próprio usuário `venda-de-put`, ou copiar e depois
+`sudo chown venda-de-put:venda-de-put /opt/venda-de-put/.env`.)
 
 Htpasswd/`auth_basic` do nginx não é mais necessário só para visitar o site
 (o template não traz mais essa diretiva). Se o usuário quiser mantê-lo por

@@ -19,6 +19,13 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
   `VENDA_DE_PUT_DATA` em `paths.py`). `docs/mvp.md` já exclui "Banco,
   usuário, multi-tenant" do escopo; um segundo administrador não é um caso
   a resolver agora.
+- **`.env` local, o mesmo arquivo em produção.** `venda_de_put.paths.load_dotenv`
+  lê `VAR=valor` de um `.env` no diretório de trabalho pra `os.environ`, sem
+  sobrescrever o que já estiver exportado — chamado no início de
+  `__main__.main()`. Nenhuma dependência nova (sem `python-dotenv`). Local:
+  copiar `.env.example` pra `.env` e preencher. Produção: o mesmo `.env`
+  vai via `scp` pro `WorkingDirectory` do systemd (`/opt/venda-de-put/.env`)
+  — sem precisar de `Environment=`/`EnvironmentFile=` no unit.
 - **Sessão por cookie assinado**, não por biblioteca de terceiros. HMAC-SHA256
   com `hmac`/`hashlib`/`secrets` da stdlib (`src/venda_de_put/auth.py`).
   Chave em `VENDA_DE_PUT_SECRET_KEY`; se ausente, uma chave é gerada em
@@ -70,7 +77,7 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
 ## Consequências
 
 - Dois segredos novos em produção: `VENDA_DE_PUT_ADMIN_PASSWORD` e
-  `VENDA_DE_PUT_SECRET_KEY`, via `EnvironmentFile` do systemd (não versionado
+  `VENDA_DE_PUT_SECRET_KEY`, via `.env` copiado pro servidor (não versionado
   — ver `deploy/RUNBOOK.md`).
 - `GET /api/scrape/status` deixou de ser público durante a implementação
   (revisão apontou que o campo `erro` vaza stderr do subprocesso) — também
