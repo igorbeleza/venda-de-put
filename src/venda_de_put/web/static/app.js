@@ -1028,9 +1028,101 @@ document.getElementById("btn-add-feriado").addEventListener("click", async () =>
   await putFeriados();
 });
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function mdInline(s) {
+  return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, (_, inner) => {
+    const cls = /[\d,]/.test(inner) ? ' class="instrucoes-num"' : "";
+    return `<strong${cls}>${inner}</strong>`;
+  });
+}
+
+function parseInstrucoes(md) {
+  const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+  let title = "Instruções";
+  const lead = [];
+  const sections = [];
+  let current = null;
+  let buf = [];
+
+  function flushPara() {
+    const text = buf.join(" ").trim();
+    buf = [];
+    if (!text) return;
+    if (current) current.blocks.push({ type: "p", text });
+    else lead.push(text);
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.startsWith("# ")) {
+      flushPara();
+      title = line.slice(2).trim();
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushPara();
+      current = { title: line.slice(3).trim(), blocks: [] };
+      sections.push(current);
+      continue;
+    }
+    if (line.startsWith("- ")) {
+      if (buf.length) flushPara();
+      if (!current) {
+        current = { title: "", blocks: [] };
+        sections.push(current);
+      }
+      let last = current.blocks[current.blocks.length - 1];
+      if (!last || last.type !== "ul") {
+        last = { type: "ul", items: [] };
+        current.blocks.push(last);
+      }
+      last.items.push(line.slice(2).trim());
+      continue;
+    }
+    if (!line.trim()) {
+      flushPara();
+      continue;
+    }
+    buf.push(line.trim());
+  }
+  flushPara();
+  return { title, lead, sections };
+}
+
+function renderInstrucoes(md) {
+  const { title, lead, sections } = parseInstrucoes(md);
+  const leadHtml = lead.map((p) => `<p class="narrative">${mdInline(p)}</p>`).join("");
+  const secs = sections.map((sec, i) => {
+    const idx = String(i + 1).padStart(2, "0");
+    const body = sec.blocks.map((b) => {
+      if (b.type === "ul") {
+        return `<ul class="instrucoes-list">${b.items.map((it) => `<li>${mdInline(it)}</li>`).join("")}</ul>`;
+      }
+      return `<p>${mdInline(b.text)}</p>`;
+    }).join("");
+    return `<section class="list-block instrucoes-sec">
+      <div class="list-banner">
+        <h2><span class="sec-idx">${idx}</span> ${escapeHtml(sec.title)}</h2>
+      </div>
+      <article class="card instrucoes-card">${body}</article>
+    </section>`;
+  }).join("");
+  return `<header class="list-banner instrucoes-hero">
+    <h2>${escapeHtml(title)}</h2>
+    ${leadHtml}
+  </header>${secs}`;
+}
+
 async function loadInstrucoes() {
   const data = await (await fetch("/api/instrucoes")).json();
-  document.getElementById("texto-instrucoes").textContent = data.texto || "";
+  document.getElementById("texto-instrucoes").innerHTML = renderInstrucoes(data.texto || "");
 }
 
 document.getElementById("vencimento").addEventListener("change", () => {

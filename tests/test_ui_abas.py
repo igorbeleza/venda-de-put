@@ -117,6 +117,29 @@ def test_instrucoes_corrigem_ifr_e_tiram_profit(data_dir):
     assert "10" in text and "50" in text
     assert "Profit" not in text
     assert "RTD" not in text
+    assert "1%" in text
+    assert "1,15%" in text
+    assert "70%" in text
+    assert "recompr" in text.lower()
+
+
+def test_instrucoes_renderizam_como_dashboard(data_dir):
+    client = TestClient(create_app(data_dir=data_dir))
+    html = client.get("/").text
+    js = client.get("/static/app.js").text
+    css = client.get("/static/app.css").text
+    assert "function renderInstrucoes" in js
+    assert "function parseInstrucoes" in js
+    assert "function mdInline" in js
+    assert 'id="texto-instrucoes").textContent = data.texto' not in js
+    assert "innerHTML = renderInstrucoes" in js
+    assert "instrucoes-card" in js
+    assert "list-banner" in js
+    assert "sec-idx" in js
+    assert ".instrucoes-card" in css
+    assert ".instrucoes-list" in css
+    assert "white-space: pre-wrap" not in css
+    assert "bui29" in html
 
 
 def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
