@@ -301,7 +301,7 @@ const tableSort = {
   "tbl-dados": { key: null, dir: 0 },
   "tbl-setores": { key: null, dir: 0 },
   "tbl-vencimentos": { key: null, dir: 0 },
-  "tbl-feriados": { key: null, dir: 0 },
+  "tbl-feriados": { key: "date", dir: 1 },
 };
 
 function colTitle(label) {
