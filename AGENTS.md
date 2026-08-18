@@ -26,7 +26,7 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 1. Comportamento novo ou mudado: teste que falha, depois o mínimo de código.
 2. `python -m pytest` no fim. Sem isso o trabalho não está feito.
 3. Mudança de UI: exercitar no browser (trocar vencimento, abrir as abas que leem o mesmo estado). CSS/JS/HTML servem sempre frescos (`Cache-Control: no-cache`, ver `app.py`); mudança em `.py` pede reiniciar o servidor.
-4. `POST /api/refresh` só relê o snapshot. Raspar é `python -m venda_de_put scrape` — ou o botão "Raspar dados agora" do admin, que sobe isso como subprocesso (nunca importar `scrape.py` em `app.py`, ver `tests/test_refresh_import_guard.py`).
+4. `POST /api/refresh` só relê o snapshot. Raspar é `python -m venda_de_put scrape` — ou o botão "Raspar dados agora" do admin, que sobe isso como subprocesso (nunca importar `scrape.py` em `app.py`, ver `tests/test_refresh_import_guard.py`). Retry de um passo falho puxa os dependentes; se a última coleta tem mais de 1 hora, vira ciclo inteiro.
 5. Subir local sem digitar comando: duplo-clique `iniciar-dashboard.bat` (Windows).
 
 ## Invariantes

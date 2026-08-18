@@ -13,7 +13,8 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 - Oito abas: Dashboard, Ativos, Dados, Setores, Config, Vencimentos, Feriados, Instruções.
 - Três listas Top 10 no Dashboard (fundamentalista, técnico, combinado) com os textos narrativos fixos.
 - Seletor de vencimento. Padrão: próximo mensal. Toggle “só mensais”.
-- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config.
+- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config, na calculadora, em porcentagem (1,15%), gravada como fração.
+- Aba Config / Raspagem: carimbo da última coleta, passos por fonte e retry do passo que falhou (com dependentes; ciclo inteiro se a coleta tem mais de 1 hora).
 - Strike de entrada no vencimento escolhido (ver `docs/sdd.md`).
 - Coleta Yahoo + OpLab + Fundamentus → snapshot em disco. Botão Atualizar relê o arquivo; não raspa.
 - CLI: `python -m venda_de_put scrape` e `serve`.

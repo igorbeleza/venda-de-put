@@ -28,14 +28,19 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `strike.py` | Strike de entrada no vencimento |
 | `calendar_b3.py` | Mensal = dia 15–21; feriado recua o efetivo. Horizonte até `cfg.calendario_ate` (Config) |
 | `paths.py` | Resolve `data/`; `load_dotenv` lê `.env` sem sobrescrever env já exportada |
-| `scrape.py` | Orquestra fontes, cadeias só dos recomendados |
+| `scrape.py` | Orquestra fontes, cadeias só dos recomendados. Aceita `only_steps` / `--from-step` para retry |
+| `scrape_progress.py` | JSON de passos (Yahoo, OpLab, Fundamentus, Cadeia). `app.py` pode importar isto; não importa `scrape.py` |
 | `snapshot.py` | Lê/grava JSON, campos novos com default |
 | `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso |
 | `auth.py` | Login de admin único: senha via env, cookie de sessão HMAC |
 
 ## Coleta
 
-- Horários e Fundamentus (dias 1 e 15) estão no Config. CLI de scrape é a raspagem.
+- Horários e Fundamentus (dias 1 e 15) estão no Config. O timer systemd (`deploy/venda-de-put-scrape.timer`) é o relógio real; os campos do Config só dizem se o dado está velho e se o Fundamentus entra no ciclo.
+- CLI de scrape é a raspagem: `python -m venda_de_put scrape`. Admin dispara o mesmo comando como subprocesso (`POST /api/scrape`).
+- Painel Config / Raspagem: carimbo da última coleta, barra de passos (ok / falhou / raspando / pulado / sem dado) e botão de retry no passo que falhou.
+- Retry de um passo puxa os dependentes: Yahoo → os quatro; OpLab → OpLab + Cadeia; Fundamentus → Fundamentus + Cadeia; Cadeia → só Cadeia. Se a última raspagem tem mais de 1 hora, o retry vira o ciclo inteiro (`retry_completo`).
+- Sair da aba Config não mata o subprocesso. O status continua sendo consultado; ao terminar, Dashboard e a aba visível relêem o snapshot.
 - Cadeia: só tickers das três listas, séries ≤ 120 dias. Campos: `due_date`, `strike`, `bid`, `ask`, `last` (`put.close`), `symbol`, `delta`, `poe`, `volume`.
 - Fonte morta: mantém o pedaço anterior e carimba `ok=false` / `stale`.
 
@@ -82,6 +87,7 @@ Instruções: `GET /api/instrucoes` lê `web/instrucoes.md`. Testes recusam cert
 
 ```
 python -m venda_de_put scrape
+python -m venda_de_put scrape --from-step oplab
 python -m venda_de_put serve --host 127.0.0.1 --port 0
 python -m pytest
 ```
