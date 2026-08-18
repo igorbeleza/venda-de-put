@@ -411,6 +411,92 @@ a { color: var(--verde); }
   font-size: 0.95rem;
 }
 
+.venc-combo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.venc-combo select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.venc-combo-btn {
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  background: var(--field);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: var(--shadow-btn);
+  padding: 7px 28px 7px 12px;
+  cursor: pointer;
+  max-width: min(36rem, 72vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  background-image:
+    linear-gradient(45deg, transparent 42%, var(--ink-2) 42%, var(--ink-2) 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, var(--ink-2) 42%, var(--ink-2) 58%, transparent 58%);
+  background-size: 7px 7px, 7px 7px;
+  background-position: right 12px center, right 7px center;
+  background-repeat: no-repeat;
+}
+.venc-combo-btn[aria-expanded="true"] {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--verde) 55%, var(--line));
+}
+.venc-combo-list {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  max-width: min(40rem, 86vw);
+  max-height: 16.5rem;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  background: var(--field);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-raised);
+}
+.venc-combo-list::-webkit-scrollbar { width: 8px; }
+.venc-combo-list::-webkit-scrollbar-track { background: transparent; }
+.venc-combo-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 28%, var(--line));
+  border-radius: 999px;
+  border: 2px solid var(--field);
+}
+.venc-combo-list { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.venc-combo-list [role="option"] {
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.venc-combo-list [role="option"]:hover,
+.venc-combo-list [role="option"].is-active {
+  background: var(--hover);
+}
+.venc-combo-list [role="option"][aria-selected="true"] {
+  background: var(--verde-tint);
+  color: var(--hl-ink);
+  font-weight: 600;
+}
+
 #carimbo { color: var(--ink-3); font-size: 0.88rem; }
 
 .date-combo-label { display: flex; align-items: center; gap: 8px; }
@@ -1381,6 +1467,7 @@ input.edit, .config-form input.edit {
   .brand-text { margin: 8px 0 0; }
   .main { border-radius: 22px; }
   .toolbar { flex-direction: column; align-items: stretch; }
+  .venc-combo, .venc-combo-btn { width: 100%; max-width: none; }
   .zoom-switch { margin: 10px 0 0; width: fit-content; }
   .cards { grid-template-columns: 1fr; }
   .list-block h2 { font-size: 1.7rem; }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="static/app.css?v=bui30">
+  <link rel="stylesheet" href="static/app.css?v=bui31">
   <script>
     (function () {
       var t, z = 1;
@@ -76,8 +76,12 @@
     </header>
     <section id="pane-dashboard" class="pane active">
       <div class="toolbar">
-        <label>Vencimento
-          <select id="vencimento"></select>
+        <label class="venc-label">Vencimento
+          <div class="venc-combo">
+            <select id="vencimento" tabindex="-1" aria-hidden="true"></select>
+            <button type="button" id="vencimento-btn" class="venc-combo-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="vencimento-list">—</button>
+            <ul id="vencimento-list" class="venc-combo-list" hidden role="listbox" tabindex="-1"></ul>
+          </div>
         </label>
         <label class="toggle">
           <input type="checkbox" id="so-mensais" checked>
@@ -242,6 +246,6 @@
       </div>
     </form>
   </div>
-  <script src="static/app.js?v=bui30"></script>
+  <script src="static/app.js?v=bui31"></script>
 </body>
 </html>

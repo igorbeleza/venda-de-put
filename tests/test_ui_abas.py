@@ -139,7 +139,7 @@ def test_instrucoes_renderizam_como_dashboard(data_dir):
     assert ".instrucoes-card" in css
     assert ".instrucoes-list" in css
     assert "white-space: pre-wrap" not in css
-    assert "bui30" in html
+    assert "bui31" in html
 
 
 def test_home_markup_has_seven_panes_and_mobile_css(data_dir):

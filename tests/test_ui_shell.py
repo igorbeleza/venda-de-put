@@ -83,6 +83,13 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert "refreshVisibleData()" in js
     assert 'if (name === "dashboard") loadDashboard()' in js
     assert "authState.admin) syncScrapePanel()" in js or "authState.admin && syncScrapePanel()" in js
+    assert 'id="vencimento"' in html
+    assert "venc-combo" in html
+    assert 'id="vencimento-btn"' in html
+    assert 'id="vencimento-list"' in html
+    assert "function syncVencCombo" in js
+    assert ".venc-combo-list" in css
+    assert ".venc-combo-list::-webkit-scrollbar" in css
 
 
 def test_home_assets_e_api_sao_relativos(tmp_path):

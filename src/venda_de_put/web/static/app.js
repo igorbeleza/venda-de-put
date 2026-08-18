@@ -195,6 +195,103 @@ function renderList(id, kind, rows, vencIso, meta30, alvo) {
   el.innerHTML = rows.map((a) => cardHtml(kind, a, vencIso, meta30, alvo)).join("");
 }
 
+function syncVencCombo() {
+  const sel = document.getElementById("vencimento");
+  const btn = document.getElementById("vencimento-btn");
+  const list = document.getElementById("vencimento-list");
+  if (!sel || !btn || !list) return;
+  const cur = sel.options[sel.selectedIndex];
+  btn.textContent = cur ? cur.textContent : "—";
+  list.innerHTML = [...sel.options].map((o) => {
+    const on = o.value === sel.value;
+    return `<li role="option" data-value="${escapeHtml(o.value)}" aria-selected="${on}" class="${on ? "is-selected" : ""}">${escapeHtml(o.textContent)}</li>`;
+  }).join("");
+}
+
+function closeVencCombo() {
+  const btn = document.getElementById("vencimento-btn");
+  const list = document.getElementById("vencimento-list");
+  if (!btn || !list) return;
+  list.hidden = true;
+  btn.setAttribute("aria-expanded", "false");
+}
+
+function openVencCombo() {
+  syncVencCombo();
+  const btn = document.getElementById("vencimento-btn");
+  const list = document.getElementById("vencimento-list");
+  list.hidden = false;
+  btn.setAttribute("aria-expanded", "true");
+  list.focus();
+  const on = list.querySelector('[aria-selected="true"]');
+  if (on) {
+    on.classList.add("is-active");
+    on.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function bindVencCombo() {
+  const combo = document.querySelector(".venc-combo");
+  const sel = document.getElementById("vencimento");
+  const btn = document.getElementById("vencimento-btn");
+  const list = document.getElementById("vencimento-list");
+  if (!combo || !sel || !btn || !list) return;
+
+  const pick = (value) => {
+    if (value && sel.value !== value) {
+      sel.value = value;
+      sel.dispatchEvent(new Event("change"));
+    }
+    syncVencCombo();
+    closeVencCombo();
+    btn.focus();
+  };
+
+  btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (list.hidden) openVencCombo();
+    else closeVencCombo();
+  });
+  btn.addEventListener("keydown", (ev) => {
+    if (ev.key === "ArrowDown" || ev.key === "Enter" || ev.key === " ") {
+      ev.preventDefault();
+      openVencCombo();
+    }
+  });
+  list.addEventListener("click", (ev) => {
+    const opt = ev.target.closest("[role=option]");
+    if (opt) pick(opt.getAttribute("data-value"));
+  });
+  list.addEventListener("keydown", (ev) => {
+    const items = [...list.querySelectorAll("[role=option]")];
+    let i = items.findIndex((el) => el.classList.contains("is-active"));
+    if (i < 0) i = items.findIndex((el) => el.getAttribute("aria-selected") === "true");
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      closeVencCombo();
+      btn.focus();
+    } else if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      items[i]?.classList.remove("is-active");
+      i = Math.min(items.length - 1, i + 1);
+      items[i]?.classList.add("is-active");
+      items[i]?.scrollIntoView({ block: "nearest" });
+    } else if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      items[i]?.classList.remove("is-active");
+      i = Math.max(0, i - 1);
+      items[i]?.classList.add("is-active");
+      items[i]?.scrollIntoView({ block: "nearest" });
+    } else if (ev.key === "Enter") {
+      ev.preventDefault();
+      if (items[i]) pick(items[i].getAttribute("data-value"));
+    }
+  });
+  document.addEventListener("click", (ev) => {
+    if (!combo.contains(ev.target)) closeVencCombo();
+  });
+}
+
 async function loadVencimentos() {
   const so = document.getElementById("so-mensais").checked ? 1 : 0;
   const res = await fetch(`api/vencimentos?so_mensais=${so}`);
@@ -206,6 +303,7 @@ async function loadVencimentos() {
     return `<option value="${val}">${v.label}</option>`;
   }).join("");
   if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  syncVencCombo();
 }
 
 async function loadDashboard() {
@@ -236,6 +334,7 @@ async function loadDashboard() {
       sel.appendChild(opt);
     }
     sel.value = vencIso;
+    syncVencCombo();
   }
   const L = data.listas || {};
   renderList("cards-fundamentalista", "fundamentalista", L.fundamentalista, vencIso, meta30, p);
@@ -1125,6 +1224,7 @@ async function loadInstrucoes() {
   document.getElementById("texto-instrucoes").innerHTML = renderInstrucoes(data.texto || "");
 }
 
+bindVencCombo();
 document.getElementById("vencimento").addEventListener("change", () => {
   loadDashboard();
 });
