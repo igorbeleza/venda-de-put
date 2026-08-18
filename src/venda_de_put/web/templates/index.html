@@ -69,7 +69,7 @@
       <button type="button" class="tab" data-tab="setores">Setores</button>
       <button type="button" class="tab" data-tab="config" hidden>Config</button>
       <button type="button" class="tab" data-tab="vencimentos">Vencimentos</button>
-      <button type="button" class="tab" data-tab="feriados">Feriados</button>
+      <button type="button" class="tab" data-tab="feriados" hidden>Feriados</button>
       <button type="button" class="tab" data-tab="instrucoes">Instruções</button>
       </div>
       <div id="auth-control" class="auth-control" aria-live="polite"></div>
@@ -173,8 +173,8 @@
         <label>Hora Fundamentus <input class="edit" name="fundamentus_time" type="text"></label>
         <div class="scrape-panel">
           <h3>Raspagem</h3>
-          <label class="toggle"><input type="checkbox" id="scrape-incluir-fundamentus"> Incluir Fundamentus</label>
-          <button type="button" id="btn-raspar">Raspar agora</button>
+          <label class="toggle"><input type="checkbox" id="scrape-incluir-fundamentus"> Incluir Fundamentus (https://fundamentus.com.br/resultado.php)</label>
+          <button type="button" id="btn-raspar">Raspar dados agora</button>
           <p id="scrape-status" class="scrape-status" aria-live="polite"></p>
         </div>
         <button type="submit" id="btn-salvar-config">Salvar</button>
@@ -207,6 +207,19 @@
     </section>
     <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo.</footer>
   </div>
+  </div>
+  <div id="login-modal" class="modal-overlay" hidden>
+    <form id="login-form" class="modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <h3 id="login-title">Login de administrador</h3>
+      <label class="modal-field">Senha
+        <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+      </label>
+      <p id="login-error" class="modal-error" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button type="button" id="login-cancel" class="modal-btn-secondary">Cancelar</button>
+        <button type="submit" id="login-submit" class="modal-btn-primary">Entrar</button>
+      </div>
+    </form>
   </div>
   <script src="/static/app.js?v=bui22"></script>
 </body>

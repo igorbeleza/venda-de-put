@@ -515,13 +515,22 @@ function renderAuthControl() {
   if (logout) logout.addEventListener("click", logoutAdmin);
 }
 
+const ADMIN_ONLY_TABS = ["config", "feriados"];
+
+function setAdminTabsVisible(visible) {
+  for (const name of ADMIN_ONLY_TABS) {
+    const tab = document.querySelector(`[data-tab="${name}"]`);
+    const pane = document.getElementById(`pane-${name}`);
+    if (tab) tab.hidden = !visible;
+    if (!visible) {
+      if (pane) pane.hidden = true;
+      if (tab?.classList.contains("active")) activateTab("dashboard");
+    }
+  }
+}
+
 function removeConfigForNonAdmin() {
-  if (authState.admin) return;
-  const tab = document.querySelector('[data-tab="config"]');
-  const pane = document.getElementById("pane-config");
-  if (tab) tab.hidden = true;
-  if (pane) pane.hidden = true;
-  if (tab?.classList.contains("active")) activateTab("dashboard");
+  setAdminTabsVisible(authState.admin);
 }
 
 async function initializeAuth() {
@@ -532,29 +541,54 @@ async function initializeAuth() {
   } catch (_err) {
     authState.admin = false;
   }
-  const configTab = document.querySelector('[data-tab="config"]');
-  if (authState.admin && configTab) configTab.hidden = false;
-  removeConfigForNonAdmin();
+  setAdminTabsVisible(authState.admin);
   renderAuthControl();
 }
 
-async function loginAdmin() {
-  const password = window.prompt("Senha de administrador:");
-  if (password === null) return;
+function openLoginModal() {
+  const overlay = document.getElementById("login-modal");
+  const input = document.getElementById("login-password");
+  const error = document.getElementById("login-error");
+  if (!overlay || !input) return;
+  error.textContent = "";
+  input.value = "";
+  overlay.hidden = false;
+  input.focus();
+}
+
+function closeLoginModal() {
+  const overlay = document.getElementById("login-modal");
+  if (overlay) overlay.hidden = true;
+}
+
+async function submitLogin(ev) {
+  ev.preventDefault();
+  const input = document.getElementById("login-password");
+  const error = document.getElementById("login-error");
+  const submitBtn = document.getElementById("login-submit");
+  if (!input || !error || !submitBtn) return;
+  submitBtn.disabled = true;
   try {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password: input.value }),
     });
     if (!res.ok) {
-      window.alert(res.status === 401 ? "Senha incorreta." : `Erro ao entrar (HTTP ${res.status}), tente novamente.`);
+      error.textContent = res.status === 401 ? "Senha incorreta." : `Erro ao entrar (HTTP ${res.status}), tente novamente.`;
+      submitBtn.disabled = false;
+      input.focus();
       return;
     }
     window.location.reload();
   } catch (_err) {
-    window.alert("Não foi possível conectar, tente novamente.");
+    error.textContent = "Não foi possível conectar, tente novamente.";
+    submitBtn.disabled = false;
   }
+}
+
+function loginAdmin() {
+  openLoginModal();
 }
 
 async function logoutAdmin() {
@@ -666,6 +700,14 @@ document.getElementById("form-config").addEventListener("focusout", (e) => {
   if (e.target && e.target.classList.contains("edit") && e.target.id !== "calc-dias") saveConfig();
 });
 document.getElementById("btn-raspar").addEventListener("click", startScrape);
+document.getElementById("login-form").addEventListener("submit", submitLogin);
+document.getElementById("login-cancel").addEventListener("click", closeLoginModal);
+document.getElementById("login-modal").addEventListener("click", (ev) => {
+  if (ev.target.id === "login-modal") closeLoginModal();
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && !document.getElementById("login-modal").hidden) closeLoginModal();
+});
 document.getElementById("calc-meta-30d").addEventListener("input", paintCalcAlvo);
 document.getElementById("calc-dias").addEventListener("input", paintCalcAlvo);
 

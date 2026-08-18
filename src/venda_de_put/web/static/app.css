@@ -460,7 +460,8 @@ button { font: inherit; }
 
 #btn-atualizar,
 #btn-salvar-config,
-#btn-add-feriado {
+#btn-add-feriado,
+#btn-raspar {
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2), transparent 46%),
     var(--verde);
@@ -479,8 +480,18 @@ button { font: inherit; }
 
 #btn-atualizar:hover,
 #btn-salvar-config:hover,
-#btn-add-feriado:hover {
+#btn-add-feriado:hover,
+#btn-raspar:hover {
   background: var(--verde-ink);
+}
+
+#btn-raspar {
+  justify-self: start;
+}
+
+#btn-raspar:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .badge {
@@ -1058,8 +1069,111 @@ input.edit, .config-form input.edit {
 .auth-link:hover { color: var(--ink); text-decoration: underline; }
 .scrape-panel { grid-column: 1 / -1; display: grid; gap: 10px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); border-radius: var(--radius-card); background: var(--surface); }
 .scrape-panel h3 { margin: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; }
-.scrape-panel .toggle { justify-content: flex-start; }
+.scrape-panel .toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
 .scrape-status { margin: 0; min-height: 1.2em; color: var(--ink-2); font-size: 0.86rem; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  z-index: 100;
+}
+
+.modal-card {
+  background-color: var(--surface);
+  background-image: var(--metal), var(--brush);
+  box-shadow: var(--shadow-raised);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  width: min(320px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+.modal-field input {
+  background: var(--field);
+  border: 0;
+  box-shadow: 0 0 0 1px var(--line);
+  border-radius: var(--radius-control);
+  padding: 9px 10px;
+  font: inherit;
+  color: var(--ink);
+}
+
+.modal-field input:focus {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+}
+
+.modal-error {
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--red);
+  font-size: 0.86rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-btn-primary {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2), transparent 46%),
+    var(--verde);
+  color: #f6f1e6;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 8px 18px rgba(20, 73, 46, 0.28);
+}
+
+.modal-btn-primary:hover { background: var(--verde-ink); }
+
+.modal-btn-secondary {
+  background: transparent;
+  color: var(--ink-2);
+  border: 0;
+  box-shadow: 0 0 0 1px var(--line);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.modal-btn-secondary:hover { color: var(--ink); background: var(--hover); }
 
 @media (max-width: 720px) {
   html { font-size: 16px; }
