@@ -17,7 +17,7 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 - **ScoreF, PctF, ScoreT, ScoreC, listas ①②③** → `docs/scoring.md` e `src/venda_de_put/scoring.py`.
 - **Indicadores (IFR, MM200, Bollinger, HV)** → `src/venda_de_put/indicators.py` e `docs/sdd.md`. Último período = à vista do instante: `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`.
 - **Login de admin, Config/Feriados gateados, raspar sob demanda** → `docs/adr/0004-login-admin-unico.md`.
-- **Deploy VPS** → pasta local `deploy/` (fora do git). Nenhuma escrita na VPS sem levantamento do nginx.
+- **Deploy VPS** → pasta local `deploy/` (fora do git: host, path, porta, units, nginx). Nenhuma escrita na VPS sem levantamento do nginx. A UI usa URL relativa (`static/…`, `api/…`) e o cookie de admin segue `X-Forwarded-Prefix`, para o app viver atrás de um path.
 - **Briefs antigos** → `docs/archive/2026-08-prompts-iniciais/` só como história. Nunca como regra.
 - **Árvore Go antiga** → zip local em `archive/main-antes-do-reset/` (gitignored). Ver `archive/README.md`.
 

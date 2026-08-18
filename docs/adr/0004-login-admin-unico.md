@@ -24,13 +24,16 @@ demanda ficam atrás de um login de administrador. Só existe um administrador.
   sobrescrever o que já estiver exportado — chamado no início de
   `__main__.main()`. Nenhuma dependência nova (sem `python-dotenv`). Local:
   copiar `.env.example` pra `.env` e preencher. Produção: o mesmo `.env`
-  vai via `scp` pro `WorkingDirectory` do systemd (`/opt/venda-de-put/.env`)
-  — sem precisar de `Environment=`/`EnvironmentFile=` no unit.
+  vai pro `WorkingDirectory` do serviço (caminho no runbook local, fora
+  do git) — sem `Environment=`/`EnvironmentFile=` no unit.
 - **Sessão por cookie assinado**, não por biblioteca de terceiros. HMAC-SHA256
   com `hmac`/`hashlib`/`secrets` da stdlib (`src/venda_de_put/auth.py`).
   Chave em `VENDA_DE_PUT_SECRET_KEY`; se ausente, uma chave é gerada em
   memória no start do processo — sessões não sobrevivem a um restart nesse
   caso, aceitável para uma ferramenta de administrador único.
+  Atrás de um prefixo no proxy, `Path` do cookie é o
+  `X-Forwarded-Prefix` e `Secure` liga se `X-Forwarded-Proto` é https
+  (senão o cookie vazaria na raiz do host compartilhado).
 - **Escopo do gate (API)**: `require_admin` protege `PUT /api/config`,
   `PUT /api/feriados`, `POST /api/scrape` e `GET /api/scrape/status`. Todo
   `GET` de leitura (dashboard, ativos, dados, setores, vencimentos,

@@ -31,7 +31,7 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `scrape.py` | Orquestra fontes, cadeias só dos recomendados. Aceita `only_steps` / `--from-step` para retry |
 | `scrape_progress.py` | JSON de passos (Yahoo, OpLab, Fundamentus, Cadeia). `app.py` pode importar isto; não importa `scrape.py` |
 | `snapshot.py` | Lê/grava JSON, campos novos com default |
-| `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso |
+| `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso. Cookie: `Path` de `X-Forwarded-Prefix`, `Secure` se `X-Forwarded-Proto` é https |
 | `auth.py` | Login de admin único: senha via env, cookie de sessão HMAC |
 
 ## Coleta
@@ -72,9 +72,13 @@ Detalhe numérico: o código e os testes. Paridade Excel dos ranks: fixtures em 
 
 ## API
 
-Trocar `?vencimento=` não vai à rede e não reordena listas. Resposta traz `premio_alvo`, `strike`, `premio_bid` (valor do último), `premio_bid_pct`, `option_symbol`, `strike_status`.
+Trocar o vencimento não vai à rede e não reordena listas. Resposta traz `premio_alvo`, `strike`, `premio_bid` (valor do último), `premio_bid_pct`, `option_symbol`, `strike_status`.
 
 Instruções: `GET /api/instrucoes` lê `web/instrucoes.md`. Testes recusam certas palavras de terminal nesse texto.
+
+HTML e JS usam caminhos relativos (`static/…`, `fetch("api/…")`), não `/static` nem `/api`. Assim o dashboard funciona na raiz local e atrás de um prefixo no proxy (`X-Forwarded-Prefix`). O seletor de vencimento é um combo da UI (fonte e scroll do tema); o `<select id="vencimento">` fica no DOM só para o valor.
+
+`pip install` leva `web/templates`, `web/static` e `instrucoes.md` (`[tool.setuptools.package-data]`). Sem isso a home 500 e os estáticos 404 — o processo em produção lê o pacote instalado, não a pasta `src/`.
 
 ## Armadilhas de fonte
 

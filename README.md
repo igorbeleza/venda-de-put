@@ -14,6 +14,8 @@ python -m pytest
 
 Windows sem terminal: duplo-clique `iniciar-dashboard.bat`.
 
+HTML/JS usam URL relativa (`static/…`, `api/…`): o dashboard roda na raiz local e também atrás de um prefixo no proxy. Assets de UI vão no `pip install` (`package-data`). Detalhe de hospedagem fica na pasta local `deploy/` (fora do git).
+
 Quem for implementar ou revisar com IA: comece em [AGENTS.md](AGENTS.md).
 
 Produto: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md).
