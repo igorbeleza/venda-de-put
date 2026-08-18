@@ -25,6 +25,7 @@ def load_config(path: Union[str, Path]) -> AppConfig:
         scrape_times=tuple(scrape),
         fundamentus_days=tuple(days),
         fundamentus_time=data.get("fundamentus_time", "07:00"),
+        calendario_ate=data.get("calendario_ate", "2027-12-31"),
     )
 
 
@@ -43,5 +44,6 @@ def save_config(cfg: AppConfig, path: Union[str, Path]) -> None:
         "scrape_times": list(cfg.scrape_times),
         "fundamentus_days": list(cfg.fundamentus_days),
         "fundamentus_time": cfg.fundamentus_time,
+        "calendario_ate": cfg.calendario_ate,
     }
     Path(path).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

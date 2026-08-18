@@ -130,6 +130,68 @@ def test_refresh_does_not_scrape(data_dir, monkeypatch):
     assert "coletado" in r.text.lower() or "generated_at" in r.json() or "stamps" in r.json()
 
 
+def test_static_assets_nao_ficam_em_cache_sem_revalidar(data_dir):
+    app = create_app(data_dir=data_dir)
+    c = TestClient(app)
+    r = c.get("/static/app.css")
+    assert r.status_code == 200
+    assert "no-cache" in r.headers.get("cache-control", "")
+    home = c.get("/")
+    assert home.status_code == 200
+    assert "no-cache" in home.headers.get("cache-control", "")
+
+
+def test_vencimentos_vai_ate_final_de_2027(data_dir):
+    app = create_app(data_dir=data_dir)
+    c = TestClient(app)
+    rows = c.get("/api/vencimentos").json()["vencimentos"]
+    nominais = [date.fromisoformat(r["nominal"][:10]) for r in rows]
+    assert max(nominais) == date(2027, 12, 31)
+    assert nominais == sorted(nominais)
+
+
+def test_config_calendario_ate_default_2027(data_dir):
+    app = create_app(data_dir=data_dir)
+    c = TestClient(app)
+    assert c.get("/api/config").json()["calendario_ate"] == "2027-12-31"
+
+
+def test_admin_estende_calendario_ate_e_vencimentos_acompanham(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    client.cookies.set("session", create_session_token())
+    cfg = client.get("/api/config").json()
+    cfg["calendario_ate"] = "2030-12-31"
+    r = client.put("/api/config", json=cfg)
+    assert r.status_code == 200
+    assert r.json()["calendario_ate"] == "2030-12-31"
+
+    rows = client.get("/api/vencimentos").json()["vencimentos"]
+    nominais = [date.fromisoformat(v["nominal"][:10]) for v in rows]
+    assert nominais == sorted(nominais)
+    assert max(nominais) == date(2030, 12, 27)  # ultima sexta-feira ate 2030-12-31
+
+
+def test_put_config_rejects_calendario_ate_invalido(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    client.cookies.set("session", create_session_token())
+    cfg = client.get("/api/config").json()
+    cfg["calendario_ate"] = "data invalida"
+    r = client.put("/api/config", json=cfg)
+    assert r.status_code == 400
+
+
+def test_put_config_rejects_calendario_ate_no_passado(data_dir):
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    client.cookies.set("session", create_session_token())
+    cfg = client.get("/api/config").json()
+    cfg["calendario_ate"] = "2020-01-01"
+    r = client.put("/api/config", json=cfg)
+    assert r.status_code == 400
+
+
 def test_dashboard_anexa_strike_e_metas(data_dir):
     app = create_app(data_dir=data_dir)
     c = TestClient(app)

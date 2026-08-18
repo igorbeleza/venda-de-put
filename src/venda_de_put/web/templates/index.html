@@ -171,6 +171,18 @@
         <label>Horários scrape <input class="edit" name="scrape_times" type="text"></label>
         <label>Dias Fundamentus <input class="edit" name="fundamentus_days" type="text"></label>
         <label>Hora Fundamentus <input class="edit" name="fundamentus_time" type="text"></label>
+        <label class="date-combo-label">Vencimentos até
+          <span class="date-combo">
+            <input type="text" class="edit date-combo-input" name="calendario_ate" id="calendario-ate" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off">
+            <input type="date" id="calendario-ate-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+            <button type="button" id="calendario-ate-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+            </button>
+          </span>
+        </label>
         <div class="scrape-panel">
           <h3>Raspagem</h3>
           <p class="calc-help">Dispara a coleta de dados fora dos horários agendados, sem esperar o próximo horário do timer.</p>
@@ -188,9 +200,9 @@
       <div class="toolbar">
         <label class="date-combo-label">Data
           <span class="date-combo">
-            <input type="text" id="feriado-data" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off">
+            <input type="text" class="date-combo-input" id="feriado-data" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off">
             <input type="date" id="feriado-data-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
-            <button type="button" id="feriado-data-cal" aria-label="Abrir calendário" title="Calendário">
+            <button type="button" id="feriado-data-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="16" rx="2"/>
                 <path d="M8 3v4M16 3v4M3 11h18"/>

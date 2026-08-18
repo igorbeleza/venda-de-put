@@ -77,6 +77,7 @@ class AppConfig:
     scrape_times: tuple[str, ...] = ("11:00", "13:00", "16:00")
     fundamentus_days: tuple[int, ...] = (1, 15)
     fundamentus_time: str = "07:00"
+    calendario_ate: str = "2027-12-31"
 
 
 @dataclass(frozen=True)

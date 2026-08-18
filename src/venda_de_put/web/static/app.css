@@ -420,8 +420,8 @@ a { color: var(--verde); }
   align-items: center;
   gap: 4px;
 }
-#feriado-data { width: 8.2rem; font-variant-numeric: tabular-nums; }
-#feriado-data[aria-invalid="true"] { box-shadow: 0 0 0 1px var(--red); }
+.date-combo-input { width: 8.2rem; font-variant-numeric: tabular-nums; }
+.date-combo-input[aria-invalid="true"] { box-shadow: 0 0 0 1px var(--red); }
 .date-picker-src {
   position: absolute;
   width: 1px;
@@ -431,7 +431,7 @@ a { color: var(--verde); }
   border: 0;
   padding: 0;
 }
-#feriado-data-cal {
+.date-combo-cal-btn {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -444,7 +444,12 @@ a { color: var(--verde); }
   display: grid;
   place-items: center;
 }
-#feriado-data-cal:hover { color: var(--ink); }
+.date-combo-cal-btn:hover { color: var(--ink); }
+.config-form .date-combo-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
 
 select, input[type="search"], input[type="text"], input[type="date"], input[type="number"] {
   font: inherit;

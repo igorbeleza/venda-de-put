@@ -498,6 +498,10 @@ async function loadConfig() {
   for (const [k, v] of Object.entries(cfg)) {
     const el = form.elements[k];
     if (!el) continue;
+    if (k === "calendario_ate") {
+      el.value = vencLabel(v);
+      continue;
+    }
     el.value = Array.isArray(v) ? v.join(", ") : v;
   }
   paintCalcAlvo();
@@ -682,6 +686,8 @@ async function saveConfig() {
       body[el.name] = el.value.split(/[,\s]+/).filter(Boolean).map((x) =>
         el.name === "fundamentus_days" ? Number(x) : x
       );
+    } else if (el.name === "calendario_ate") {
+      body[el.name] = parseBrDate(el.value) || el.value;
     } else if (CFG_NUM.includes(el.name)) {
       body[el.name] = Number(el.value);
     } else {
@@ -710,6 +716,31 @@ document.addEventListener("keydown", (ev) => {
 });
 document.getElementById("calc-meta-30d").addEventListener("input", paintCalcAlvo);
 document.getElementById("calc-dias").addEventListener("input", paintCalcAlvo);
+
+const calendarioAteEl = document.getElementById("calendario-ate");
+const calendarioAtePickerEl = document.getElementById("calendario-ate-picker");
+calendarioAteEl.addEventListener("input", () => {
+  calendarioAteEl.value = maskBrDate(calendarioAteEl.value);
+  calendarioAteEl.removeAttribute("aria-invalid");
+  const iso = parseBrDate(calendarioAteEl.value);
+  if (iso) calendarioAtePickerEl.value = iso;
+});
+calendarioAtePickerEl.addEventListener("change", () => {
+  if (!calendarioAtePickerEl.value) return;
+  calendarioAteEl.value = vencLabel(calendarioAtePickerEl.value);
+  calendarioAteEl.removeAttribute("aria-invalid");
+  saveConfig();
+});
+document.getElementById("calendario-ate-cal").addEventListener("click", () => {
+  const iso = parseBrDate(calendarioAteEl.value);
+  if (iso) calendarioAtePickerEl.value = iso;
+  try {
+    calendarioAtePickerEl.showPicker();
+  } catch (e) {
+    calendarioAtePickerEl.focus();
+    calendarioAtePickerEl.click();
+  }
+});
 
 let vencimentosRows = [];
 

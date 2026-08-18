@@ -4,7 +4,7 @@ import json
 import subprocess
 import sys
 from dataclasses import asdict, is_dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -91,10 +91,18 @@ def _load_feriados_raw(path: Path) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+_CALENDAR_THROUGH_DEFAULT = date(2027, 12, 31)  # usado se calendario_ate no config estiver ilegivel
+
+
 def _calendar(app: FastAPI, today: Optional[date] = None) -> list[Vencimento]:
     today = today or datetime.now(TZ).date()
     holidays = load_holidays(app.state.feriados_path) if app.state.feriados_path.is_file() else set()
-    return build_calendar(today, holidays, today + timedelta(days=400))
+    cfg = load_config(app.state.config_path) if app.state.config_path.is_file() else AppConfig()
+    try:
+        through = date.fromisoformat(cfg.calendario_ate)
+    except (TypeError, ValueError):
+        through = _CALENDAR_THROUGH_DEFAULT
+    return build_calendar(today, holidays, through)
 
 
 def _pick_vencimento(
@@ -394,6 +402,13 @@ def create_app(data_dir: Path) -> FastAPI:
                 parsed[key] = caster(body[key])
             except (TypeError, ValueError):
                 raise HTTPException(400, f"campo não numérico: {key}") from None
+        calendario_ate_raw = body.get("calendario_ate", "2027-12-31")
+        try:
+            calendario_ate_date = date.fromisoformat(str(calendario_ate_raw)[:10])
+        except (TypeError, ValueError):
+            raise HTTPException(400, "campo calendario_ate sem data parseável") from None
+        if calendario_ate_date < datetime.now(TZ).date():
+            raise HTTPException(400, "calendario_ate não pode ser no passado")
         cfg = AppConfig(
             ifr_min=parsed["ifr_min"],
             ifr_max=parsed["ifr_max"],
@@ -408,6 +423,7 @@ def create_app(data_dir: Path) -> FastAPI:
             scrape_times=tuple(body.get("scrape_times", ("11:00", "13:00", "16:00"))),
             fundamentus_days=tuple(body.get("fundamentus_days", (1, 15))),
             fundamentus_time=body.get("fundamentus_time", "07:00"),
+            calendario_ate=calendario_ate_date.isoformat(),
         )
         save_config(cfg, app.state.config_path)
         snap = get_snap()
@@ -467,6 +483,13 @@ def create_app(data_dir: Path) -> FastAPI:
     templates_dir = web_dir / "templates"
     if static_dir.is_dir():
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.middleware("http")
+    async def no_cache_frontend(request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.get("/")
     def home():
