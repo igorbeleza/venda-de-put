@@ -75,57 +75,79 @@ def run_scrape(
     chain_source: ChainSource | None = None,
     chain_pause: float = 0.0,
     force_fundamentus: bool | None = None,
+    progress: object | None = None,
+    only_steps: tuple[str, ...] | list[str] | None = None,
 ) -> Snapshot:
     tickers = list(universe.keys())
     stamps: list[SourceStamp] = []
+    wanted = None if only_steps is None else set(only_steps)
 
     series: dict = {}
-    try:
-        series = price.fetch(tickers)
-        # YahooHttp swallows per-ticker failures and may return {}; treat zero
-        # matches as a failed source so the stamp is not ok=True on total outage.
-        matched = sum(1 for t in tickers if t in series)
-        if not tickers or matched * 2 < len(tickers):
-            stamps.append(
-                SourceStamp(
-                    "yahoo",
-                    now,
-                    False,
-                    "fewer than half of requested tickers" if tickers else "no tickers",
-                    True,
-                )
-            )
-        else:
-            stamps.append(SourceStamp("yahoo", now, True, None, False))
-    except Exception as e:
-        stamps.append(SourceStamp("yahoo", now, False, str(e), True))
+    if wanted is None or "yahoo" in wanted:
+        _prog(progress, "yahoo", "raspando")
+        try:
+            series = price.fetch(tickers)
+            # YahooHttp swallows per-ticker failures and may return {}; treat zero
+            # matches as a failed source so the stamp is not ok=True on total outage.
+            matched = sum(1 for t in tickers if t in series)
+            if not tickers or matched * 2 < len(tickers):
+                err = "fewer than half of requested tickers" if tickers else "no tickers"
+                stamps.append(SourceStamp("yahoo", now, False, err, True))
+                _prog(progress, "yahoo", "falhou", err)
+            else:
+                stamps.append(SourceStamp("yahoo", now, True, None, False))
+                _prog(progress, "yahoo", "ok")
+        except Exception as e:
+            stamps.append(SourceStamp("yahoo", now, False, str(e), True))
+            _prog(progress, "yahoo", "falhou", str(e))
+    else:
+        _keep_stamp(stamps, previous, "yahoo")
 
     iv_pts: dict[str, IvPoint] = {}
-    try:
-        iv_pts = iv.fetch()
-        stamps.append(SourceStamp("oplab", now, True, None, False))
-    except Exception as e:
-        stamps.append(SourceStamp("oplab", now, False, str(e), True))
-        if previous is not None:
-            for a in previous.assets:
-                t = a.technicals
-                if t is not None and (
-                    t.iv is not None or t.iv_rank is not None or t.iv_percentile is not None
-                ):
-                    iv_pts[a.ticker] = IvPoint(
-                        a.ticker, t.iv, t.iv_rank, t.iv_percentile
-                    )
+    if wanted is None or "oplab" in wanted:
+        _prog(progress, "oplab", "raspando")
+        try:
+            iv_pts = iv.fetch()
+            stamps.append(SourceStamp("oplab", now, True, None, False))
+            _prog(progress, "oplab", "ok")
+        except Exception as e:
+            stamps.append(SourceStamp("oplab", now, False, str(e), True))
+            _prog(progress, "oplab", "falhou", str(e))
+            if previous is not None:
+                for a in previous.assets:
+                    t = a.technicals
+                    if t is not None and (
+                        t.iv is not None or t.iv_rank is not None or t.iv_percentile is not None
+                    ):
+                        iv_pts[a.ticker] = IvPoint(
+                            a.ticker, t.iv, t.iv_rank, t.iv_percentile
+                        )
+    else:
+        _keep_stamp(stamps, previous, "oplab")
 
     fund_rows: list[Fundamentals] = []
-    if should_fetch_fundamentus(now, cfg, previous, force_fundamentus=force_fundamentus):
+    do_fund = (
+        "fundamentus" in wanted
+        if wanted is not None
+        else should_fetch_fundamentus(now, cfg, previous, force_fundamentus=force_fundamentus)
+    )
+    if do_fund:
+        _prog(progress, "fundamentus", "raspando")
         try:
             fund_rows = fundamentals.fetch()
             stamps.append(SourceStamp("fundamentus", now, True, None, False))
+            _prog(progress, "fundamentus", "ok")
         except Exception as e:
             stamps.append(SourceStamp("fundamentus", now, False, str(e), True))
+            _prog(progress, "fundamentus", "falhou", str(e))
             if previous is not None:
                 fund_rows = list(previous.fundamentus_rows)
+    elif wanted is not None:
+        _keep_stamp(stamps, previous, "fundamentus")
+        if previous is not None:
+            fund_rows = list(previous.fundamentus_rows)
     else:
+        _prog(progress, "fundamentus", "pulado")
         if previous is not None:
             fund_rows = list(previous.fundamentus_rows)
             prev_stamp = next((s for s in previous.stamps if s.source == "fundamentus"), None)
@@ -200,14 +222,19 @@ def run_scrape(
     prev_chains: dict[str, list[PutQuote]] = {}
     if previous is not None:
         prev_chains = dict(previous.chains)
-    chains = _fetch_chains(
-        chain_source,
-        recommended_tickers(lists),
-        prev_chains,
-        stamps,
-        now,
-        chain_pause,
-    )
+    if wanted is not None and "oplab_cadeia" not in wanted:
+        _keep_stamp(stamps, previous, "oplab_cadeia")
+        chains = prev_chains
+    else:
+        chains = _fetch_chains(
+            chain_source,
+            recommended_tickers(lists),
+            prev_chains,
+            stamps,
+            now,
+            chain_pause,
+            progress,
+        )
     return Snapshot(
         generated_at=now,
         stamps=stamps,
@@ -218,6 +245,22 @@ def run_scrape(
     )
 
 
+def _keep_stamp(stamps: list[SourceStamp], previous: Snapshot | None, source: str) -> None:
+    if previous is None:
+        return
+    prev = next((s for s in previous.stamps if s.source == source), None)
+    if prev is not None:
+        stamps.append(prev)
+
+
+def _prog(progress: object | None, source: str, status: str, erro: str | None = None) -> None:
+    if progress is None:
+        return
+    mark = getattr(progress, "mark", None)
+    if callable(mark):
+        mark(source, status, erro)
+
+
 def _fetch_chains(
     chain_source: ChainSource | None,
     tickers: list[str],
@@ -225,9 +268,12 @@ def _fetch_chains(
     stamps: list[SourceStamp],
     now: datetime,
     pause: float,
+    progress: object | None = None,
 ) -> dict[str, list[PutQuote]]:
     if chain_source is None:
+        _prog(progress, "oplab_cadeia", "pulado")
         return previous
+    _prog(progress, "oplab_cadeia", "raspando")
     out: dict[str, list[PutQuote]] = dict(previous)
     failed: list[str] = []
     ok_n = 0
@@ -242,21 +288,29 @@ def _fetch_chains(
             if ticker not in out and ticker in previous:
                 out[ticker] = previous[ticker]
     if tickers:
+        err = None if not failed else "falha: " + ",".join(failed)
         stamps.append(
             SourceStamp(
                 "oplab_cadeia",
                 now,
                 ok_n > 0,
-                None if not failed else "falha: " + ",".join(failed),
+                err,
                 ok_n == 0,
             )
         )
+        if ok_n > 0:
+            _prog(progress, "oplab_cadeia", "ok")
+        else:
+            _prog(progress, "oplab_cadeia", "falhou", err)
+    else:
+        _prog(progress, "oplab_cadeia", "pulado")
     return out
 
 
 def cli_scrape(
     data_dir: Path | str | None = None,
     force_fundamentus: bool | None = None,
+    from_step: str | None = None,
 ) -> int:
     root = resolve_data_dir(data_dir)
     current = snapshot_current(root)
@@ -274,7 +328,23 @@ def cli_scrape(
     from venda_de_put.sources.fundamentus import FundamentusHttp
     from venda_de_put.sources.oplab import OplabHttp
     from venda_de_put.sources.yahoo import YahooHttp
+    from venda_de_put.scrape_progress import (
+        FileProgress,
+        begin_progress,
+        progress_path,
+        retry_from,
+        start_retry,
+    )
 
+    prog_file = progress_path(root)
+    only_steps = None
+    if from_step:
+        only_steps = retry_from(from_step)
+        start_retry(prog_file, only_steps)
+        if "fundamentus" in only_steps and force_fundamentus is None:
+            force_fundamentus = True
+    else:
+        begin_progress(prog_file)
     oplab = OplabHttp()
     snap = run_scrape(
         YahooHttp(),
@@ -288,6 +358,8 @@ def cli_scrape(
         chain_source=oplab,
         chain_pause=0.35,
         force_fundamentus=force_fundamentus,
+        progress=FileProgress(prog_file),
+        only_steps=only_steps,
     )
     write_snapshot(snap, current, history, archive_if_1600=True)
     return 0

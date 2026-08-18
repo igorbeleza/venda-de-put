@@ -40,6 +40,17 @@ from venda_de_put.paths import snapshot_current, snapshot_history
 from venda_de_put.premium import premio_alvo
 from venda_de_put.scoring import apply_technical, build_lists, score_fundamentals
 from venda_de_put.strike import select_strike
+from venda_de_put.scrape_progress import (
+    STEPS,
+    begin_progress,
+    fail_running,
+    passos_from_stamps,
+    progress_path,
+    read_progress,
+    retry_from,
+    retry_is_full,
+    start_retry,
+)
 from venda_de_put.snapshot import is_stale, read_snapshot, snapshot_to_dict, write_snapshot
 from venda_de_put.tz import TZ
 
@@ -165,6 +176,25 @@ def _strike_fields(pick) -> dict:
     }
 
 
+def _empty_passos() -> list[dict]:
+    return [{"id": sid, "label": label, "status": "pendente", "erro": None} for sid, label in STEPS]
+
+
+def _scrape_passos(app: FastAPI) -> list[dict]:
+    progress = read_progress(app.state.progress_path)
+    if progress and progress.get("passos"):
+        return progress["passos"]
+    snap = app.state.snapshot
+    if snap is None and app.state.snapshot_path.is_file():
+        try:
+            snap = read_snapshot(app.state.snapshot_path)
+        except Exception:
+            snap = None
+    if snap is not None:
+        return passos_from_stamps(snap.stamps)
+    return _empty_passos()
+
+
 def _stamp_out(s) -> dict:
     return {
         "source": s.source,
@@ -235,6 +265,7 @@ def create_app(data_dir: Path) -> FastAPI:
     app.state.snapshot_mtime: Optional[float] = None
     app.state.scrape_process: Optional[subprocess.Popen] = None
     app.state.scrape_error: Optional[str] = None
+    app.state.progress_path = progress_path(data_dir)
 
     def _is_scrape_running() -> bool:
         proc = app.state.scrape_process
@@ -245,6 +276,7 @@ def create_app(data_dir: Path) -> FastAPI:
             stdout, stderr = process.communicate()
             if process.returncode != 0:
                 app.state.scrape_error = (stderr or "").strip() or f"processo saiu com código {process.returncode}"
+                fail_running(app.state.progress_path, app.state.scrape_error)
             else:
                 app.state.scrape_error = None
                 if app.state.snapshot_path.is_file():
@@ -535,15 +567,34 @@ def create_app(data_dir: Path) -> FastAPI:
         require_admin(request)
 
         incluir_fundamentus = None
+        passo = None
         try:
             body = await request.json()
-            if isinstance(body, dict) and "incluir_fundamentus" in body:
-                incluir_fundamentus = body["incluir_fundamentus"]
+            if isinstance(body, dict):
+                if "incluir_fundamentus" in body:
+                    incluir_fundamentus = body["incluir_fundamentus"]
+                if isinstance(body.get("passo"), str) and body["passo"].strip():
+                    passo = body["passo"].strip()
         except Exception:
             pass
 
+        if passo is not None:
+            try:
+                retry_from(passo)
+            except ValueError:
+                raise HTTPException(400, "passo desconhecido")
+
         if _is_scrape_running():
             raise HTTPException(409, "raspagem já em andamento")
+
+        gen_at = None
+        if app.state.snapshot_path.is_file():
+            try:
+                gen_at = get_snap().generated_at
+            except Exception:
+                gen_at = None
+        if passo is not None and retry_is_full(gen_at, datetime.now(TZ)):
+            passo = None
 
         cmd = [
             sys.executable,
@@ -553,12 +604,18 @@ def create_app(data_dir: Path) -> FastAPI:
             "--data-dir",
             str(app.state.data_dir),
         ]
+        if passo is not None:
+            cmd.extend(["--from-step", passo])
         if incluir_fundamentus is True:
             cmd.extend(["--force-fundamentus", "true"])
         elif incluir_fundamentus is False:
             cmd.extend(["--force-fundamentus", "false"])
 
         app.state.scrape_error = None
+        if passo is not None:
+            start_retry(app.state.progress_path, retry_from(passo))
+        else:
+            begin_progress(app.state.progress_path)
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
@@ -575,9 +632,11 @@ def create_app(data_dir: Path) -> FastAPI:
         running = _is_scrape_running()
         status = "running" if running else "idle"
         gen_at = None
+        snap_at = None
         if app.state.snapshot_path.is_file():
             try:
                 snap = get_snap()
+                snap_at = snap.generated_at
                 gen_at = snap.generated_at.isoformat()
             except Exception:
                 pass
@@ -585,6 +644,8 @@ def create_app(data_dir: Path) -> FastAPI:
             "status": status,
             "generated_at": gen_at,
             "erro": app.state.scrape_error,
+            "passos": _scrape_passos(app),
+            "retry_completo": retry_is_full(snap_at, datetime.now(TZ)),
         }
 
     @app.post("/api/refresh")

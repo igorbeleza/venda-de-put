@@ -119,6 +119,72 @@ def data_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def test_scrape_status_passos_vêm_dos_stamps_sem_progresso(data_dir):
+    from venda_de_put.auth import create_session_token
+
+    app = create_app(data_dir=data_dir)
+    client = TestClient(app)
+    client.cookies.set("session", create_session_token())
+    data = client.get("/api/scrape/status").json()
+    by = {p["id"]: p for p in data["passos"]}
+    assert by["yahoo"]["status"] == "ok"
+    assert by["oplab"]["status"] == "ok"
+    assert by["fundamentus"]["status"] == "ok"
+
+
+def test_passo_com_raspagem_velha_dispara_ciclo_inteiro(data_dir, monkeypatch):
+    import subprocess
+    from dataclasses import replace
+    from datetime import datetime, timedelta
+
+    from venda_de_put.auth import create_session_token
+    from venda_de_put.snapshot import read_snapshot, write_snapshot
+    from venda_de_put.tz import TZ
+
+    app = create_app(data_dir=data_dir)
+    snap = read_snapshot(app.state.snapshot_path)
+    captured = []
+
+    class FakeProc:
+        def __init__(self, cmd, *a, **k):
+            captured.append(cmd)
+            self.returncode = 0
+
+        def poll(self):
+            return 0
+
+        def communicate(self):
+            return ("", "")
+
+    monkeypatch.setattr(subprocess, "Popen", FakeProc)
+    client = TestClient(app)
+    client.cookies.set("session", create_session_token())
+
+    write_snapshot(
+        replace(snap, generated_at=datetime.now(TZ) - timedelta(hours=1, seconds=1)),
+        app.state.snapshot_path,
+        app.state.history_dir,
+        archive_if_1600=False,
+    )
+    app.state.snapshot = None
+    app.state.snapshot_mtime = None
+    assert client.get("/api/scrape/status").json()["retry_completo"] is True
+    assert client.post("/api/scrape", json={"passo": "oplab"}).status_code == 200
+    assert "--from-step" not in captured[-1]
+
+    write_snapshot(
+        replace(snap, generated_at=datetime.now(TZ) - timedelta(minutes=10)),
+        app.state.snapshot_path,
+        app.state.history_dir,
+        archive_if_1600=False,
+    )
+    app.state.snapshot = None
+    app.state.snapshot_mtime = None
+    assert client.get("/api/scrape/status").json()["retry_completo"] is False
+    assert client.post("/api/scrape", json={"passo": "oplab"}).status_code == 200
+    assert captured[-1][captured[-1].index("--from-step") + 1] == "oplab"
+
+
 def test_refresh_does_not_scrape(data_dir, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("scrape called")
@@ -292,7 +358,9 @@ def test_app_py_does_not_import_scrape():
     src = Path(__file__).resolve().parents[1] / "src" / "venda_de_put" / "web" / "app.py"
     text = src.read_text(encoding="utf-8")
     assert "run_scrape" not in text
-    assert "venda_de_put.scrape" not in text
+    assert "from venda_de_put.scrape import" not in text
+    assert "import venda_de_put.scrape\n" not in text
+    assert "venda_de_put.scrape " not in text
 
 
 def test_ativos_calculo0_strips_ranks_from_item_root(data_dir):

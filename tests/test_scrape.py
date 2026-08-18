@@ -4,6 +4,7 @@ from pathlib import Path
 from venda_de_put.config import AppConfig
 from venda_de_put.models import CandleSeries, Fundamentals, IvPoint, PutQuote
 from venda_de_put.scrape import run_scrape
+from venda_de_put.scrape_progress import FileProgress, read_progress
 from venda_de_put.snapshot import read_snapshot, write_snapshot
 from venda_de_put.tz import TZ
 
@@ -77,6 +78,37 @@ def test_write_and_read_roundtrip(tmp_path: Path):
     assert back.assets[0].technicals.iv == 0.35
     assert back.assets[0].technicals.iv_rank == 40
     assert back.assets[0].technicals.iv_percentile == 0.55
+
+
+def test_run_scrape_marca_passos_ok_e_fundamentus_pulado(tmp_path: Path):
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    path = tmp_path / "scrape_progress.json"
+    progress = FileProgress(path)
+    later = now.replace(hour=13)
+    run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), later,
+        previous=first, progress=progress, force_fundamentus=False,
+    )
+    by = {s["id"]: s for s in read_progress(path)["passos"]}
+    assert by["yahoo"]["status"] == "ok"
+    assert by["oplab"]["status"] == "ok"
+    assert by["fundamentus"]["status"] == "pulado"
+    assert by["oplab_cadeia"]["status"] == "pulado"
+
+
+def test_run_scrape_marca_oplab_falhou(tmp_path: Path):
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    path = tmp_path / "scrape_progress.json"
+    progress = FileProgress(path)
+    run_scrape(
+        price, FakeIv({}, fail=True), fund, AppConfig(), universe, set(), now,
+        previous=first, progress=progress, force_fundamentus=False,
+    )
+    by = {s["id"]: s for s in read_progress(path)["passos"]}
+    assert by["oplab"]["status"] == "falhou"
+    assert "oplab down" in (by["oplab"]["erro"] or "")
 
 
 def test_run_scrape_uses_adapters_once():
@@ -181,6 +213,44 @@ class FakeChain:
         if ticker in self.fail:
             raise RuntimeError("cadeia down")
         return list(self.data.get(ticker, []))
+
+
+def test_run_scrape_retry_oplab_nao_toca_yahoo_nem_fundamentus():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    price2 = FakePrice(price.series)
+    fund2 = FakeFund(fund.rows)
+    later = now.replace(hour=13)
+    second = run_scrape(
+        price2, iv, fund2, AppConfig(), universe, set(), later,
+        previous=first, force_fundamentus=True, only_steps=("oplab", "oplab_cadeia"),
+    )
+    assert price2.calls == 0
+    assert fund2.calls == 0
+    assert iv.calls == 2
+    yahoo = next(s for s in second.stamps if s.source == "yahoo")
+    fund_st = next(s for s in second.stamps if s.source == "fundamentus")
+    assert yahoo.ok is True
+    assert fund_st.ok is True
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 41.75
+
+
+def test_run_scrape_retry_cadeia_so_busca_cadeia():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    price2 = FakePrice(price.series)
+    iv2 = FakeIv(iv.pts)
+    fund2 = FakeFund(fund.rows)
+    chain = FakeChain({})
+    run_scrape(
+        price2, iv2, fund2, AppConfig(), universe, set(), now,
+        previous=first, chain_source=chain, only_steps=("oplab_cadeia",),
+    )
+    assert price2.calls == 0
+    assert iv2.calls == 0
+    assert fund2.calls == 0
+    assert chain.calls
 
 
 def test_scrape_guarda_cadeia_dos_recomendados_e_sobrevive_roundtrip(tmp_path: Path):

@@ -239,6 +239,12 @@ def test_get_scrape_status_autenticado(data_dir: Path):
     assert data["status"] in ("idle", "running")
     assert "erro" in data
     assert "generated_at" in data
+    assert "passos" in data
+    ids = [p["id"] for p in data["passos"]]
+    assert ids == ["yahoo", "oplab", "fundamentus", "oplab_cadeia"]
+    for p in data["passos"]:
+        assert "label" in p and "status" in p
+        assert "erro" in p
 
 
 def test_post_scrape_sucesso_e_comandos(data_dir: Path, monkeypatch):
@@ -304,6 +310,14 @@ def test_post_scrape_sucesso_e_comandos(data_dir: Path, monkeypatch):
     idx = captured_cmds[-1].index("--force-fundamentus")
     assert captured_cmds[-1][idx + 1] == "false"
 
+    res_passo = client.post("/api/scrape", json={"passo": "oplab"})
+    assert res_passo.status_code == 200
+    cmd = captured_cmds[-1]
+    assert cmd[cmd.index("--from-step") + 1] == "oplab"
+
+    res_ruim = client.post("/api/scrape", json={"passo": "nexiste"})
+    assert res_ruim.status_code == 400
+
 
 def test_post_scrape_status_running_enquanto_ativo(data_dir: Path):
     app = create_app(data_dir)
@@ -368,20 +382,23 @@ def test_main_cli_force_fundamentus_parsing(monkeypatch):
 
     calls = []
 
-    def fake_cli_scrape(data_dir=None, force_fundamentus=None):
-        calls.append((data_dir, force_fundamentus))
+    def fake_cli_scrape(data_dir=None, force_fundamentus=None, from_step=None):
+        calls.append((data_dir, force_fundamentus, from_step))
         return 0
 
     monkeypatch.setattr(venda_de_put.scrape, "cli_scrape", fake_cli_scrape)
 
     main(["scrape"])
-    assert calls[-1] == (None, None)
+    assert calls[-1] == (None, None, None)
 
     main(["scrape", "--force-fundamentus", "true"])
-    assert calls[-1] == (None, True)
+    assert calls[-1] == (None, True, None)
 
     main(["scrape", "--force-fundamentus", "false"])
-    assert calls[-1] == (None, False)
+    assert calls[-1] == (None, False, None)
+
+    main(["scrape", "--from-step", "oplab"])
+    assert calls[-1] == (None, None, "oplab")
 
 
 

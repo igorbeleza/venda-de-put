@@ -29,6 +29,7 @@ htpasswd
 # Snapshot gerado pelo scrape (não versionar cotação)
 data/snapshots/current.json
 data/snapshots/history/
+data/snapshots/scrape_progress.json
 
 # Planilha original e protótipo de UI — locais, não autoridade
 *.xlsx
