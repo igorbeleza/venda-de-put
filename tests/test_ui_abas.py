@@ -163,6 +163,15 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "strike" in js
     assert "meta_premio_30d" in js
     assert "Calculadora de prêmio-alvo" in html
+    assert 'id="calc-meta-30d"' in html
+    assert 'id="calc-alvo"' in html
+    meta_input = html.split('id="calc-meta-30d"', 1)[1].split(">", 1)[0]
+    assert 'type="number"' not in meta_input
+    assert "function parsePct" in js
+    assert 'k === "meta_premio_30d"' in js
+    assert 'num(v, "pct")' in js
+    assert "parsePct(el.value)" in js
+    assert "parsePct(metaEl.value)" in js
     assert "GRUPO_ABREV" in js
     assert "Utilities (Energia/Saneamento)" in js
     assert "tbl-dados" in js

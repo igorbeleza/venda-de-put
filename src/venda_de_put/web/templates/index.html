@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=bui22">
+  <link rel="stylesheet" href="/static/app.css?v=bui28">
   <script>
     (function () {
       var t, z = 1;
@@ -150,7 +150,7 @@
           <h3>Calculadora de prêmio-alvo por vencimento</h3>
           <p class="calc-help">Os mesmos três campos da planilha. O último é fórmula: Meta 30d × √(dias / 30).</p>
           <label>Meta de prêmio p/ 30 dias
-            <input class="edit" id="calc-meta-30d" name="meta_premio_30d" type="number" step="any">
+            <input class="edit" id="calc-meta-30d" name="meta_premio_30d" type="text" inputmode="decimal" autocomplete="off">
           </label>
           <label>Dias até o vencimento (corridos)
             <input class="edit" id="calc-dias" type="number" step="1">
@@ -185,6 +185,13 @@
         </label>
         <div class="scrape-panel">
           <h3>Raspagem</h3>
+          <p id="scrape-ultima" class="scrape-ultima">Última raspagem: sem dado</p>
+          <ol id="scrape-passos" class="scrape-passos" aria-label="Passos da raspagem">
+            <li data-step="yahoo" data-status="pendente"><span class="scrape-step-name">Yahoo</span><span class="scrape-step-state">pendente</span></li>
+            <li data-step="oplab" data-status="pendente"><span class="scrape-step-name">OpLab</span><span class="scrape-step-state">pendente</span></li>
+            <li data-step="fundamentus" data-status="pendente"><span class="scrape-step-name">Fundamentus</span><span class="scrape-step-state">pendente</span></li>
+            <li data-step="oplab_cadeia" data-status="pendente"><span class="scrape-step-name">Cadeia</span><span class="scrape-step-state">pendente</span></li>
+          </ol>
           <p class="calc-help">Dispara a coleta de dados fora dos horários agendados, sem esperar o próximo horário do timer. Coleta preços e histórico (Yahoo), volatilidade implícita e cadeia de opções (OpLab) e, se marcado abaixo, indicadores fundamentalistas (Fundamentus).</p>
           <p class="scrape-warn">Evite clicar repetidas vezes em pouco tempo: cada raspagem faz várias requisições reais aos sites de origem, e fazer isso com frequência pode levar esses sites a bloquear ou limitar o acesso da ferramenta, prejudicando a coleta agendada também.</p>
           <label class="toggle"><input type="checkbox" id="scrape-incluir-fundamentus"> Incluir Fundamentus (https://fundamentus.com.br/resultado.php)</label>
@@ -235,6 +242,6 @@
       </div>
     </form>
   </div>
-  <script src="/static/app.js?v=bui22"></script>
+  <script src="/static/app.js?v=bui28"></script>
 </body>
 </html>

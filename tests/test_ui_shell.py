@@ -45,3 +45,32 @@ def test_home_has_eight_tabs_and_narratives(tmp_path):
     assert 'id="btn-raspar"' in html
     assert 'id="scrape-incluir-fundamentus"' in html
     assert 'fetch("/api/scrape/status")' in js
+    assert 'id="scrape-ultima"' in html
+    scrape_panel = html.split('class="scrape-panel"', 1)[1].split("</div>", 1)[0]
+    assert "Última raspagem" in scrape_panel
+    assert "function paintScrapeUltima" in js
+    assert "function loadScrapeUltima" in js
+    assert "loadScrapeUltima()" in js
+    assert "Última raspagem: sem dado" in js
+    assert "Última raspagem:" in js
+    assert 'id="scrape-passos"' in html
+    assert "function paintScrapePassos" in js
+    assert "function syncScrapePanel" in js
+    assert "syncScrapePanel()" in js
+    assert 'data.status === "running"' in js
+    assert "loadDashboard()" in js
+    assert "data-step=\"yahoo\"" in html
+    assert "data-step=\"oplab\"" in html
+    assert "data-step=\"fundamentus\"" in html
+    assert "data-step=\"oplab_cadeia\"" in html
+    assert "function retry_from" not in js
+    assert "function retryScrapePasso" in js
+    assert 'passo:' in js or '"passo"' in js
+    assert "scrape-retry" in js
+    assert "--from-step" not in js
+    assert "retry_completo" in js
+    assert "mais de 1 hora" in js
+    assert "function refreshVisibleData" in js
+    assert "refreshVisibleData()" in js
+    assert 'if (name === "dashboard") loadDashboard()' in js
+    assert "authState.admin) syncScrapePanel()" in js or "authState.admin && syncScrapePanel()" in js

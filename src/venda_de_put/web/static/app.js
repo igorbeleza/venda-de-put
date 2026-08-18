@@ -49,6 +49,12 @@ function num(v, style) {
   return fmtNum.format(Number(v));
 }
 
+function parsePct(s) {
+  const t = String(s || "").trim().replace("%", "").replace(/\s/g, "").replace(",", ".");
+  const n = Number(t);
+  return Number.isFinite(n) ? n / 100 : NaN;
+}
+
 function parseBrDate(s) {
   const t = String(s || "").trim();
   let m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -243,13 +249,27 @@ function paintCalcAlvo() {
   const diasEl = document.getElementById("calc-dias");
   const out = document.getElementById("calc-alvo");
   if (!metaEl || !diasEl || !out) return;
-  const meta = Number(metaEl.value);
+  const meta = parsePct(metaEl.value);
   const dias = Number(diasEl.value);
   if (!Number.isFinite(meta) || !Number.isFinite(dias) || dias <= 0) {
     out.textContent = "—";
     return;
   }
   out.textContent = num(meta * Math.sqrt(dias / 30), "pct");
+}
+
+function activeTabName() {
+  return document.querySelector(".tab.active")?.dataset.tab || "dashboard";
+}
+
+function refreshVisibleData() {
+  loadDashboard();
+  const name = activeTabName();
+  if (name === "ativos") loadAtivos();
+  if (name === "dados") loadDados();
+  if (name === "setores") loadSetores();
+  if (name === "vencimentos") loadVencimentosTable();
+  if (name === "config") syncScrapePanel();
 }
 
 function activateTab(name) {
@@ -261,6 +281,7 @@ function activateTab(name) {
     p.classList.toggle("active", on);
     p.hidden = !on;
   });
+  if (name === "dashboard") loadDashboard();
   if (name === "ativos") loadAtivos();
   if (name === "dados") loadDados();
   if (name === "setores") loadSetores();
@@ -492,6 +513,93 @@ const CFG_NUM = [
   "ifr_periodos", "boll_periodos", "boll_desvios", "hv_periodos",
 ];
 
+function paintScrapeUltima(iso) {
+  const el = document.getElementById("scrape-ultima");
+  if (!el) return;
+  el.textContent = iso
+    ? `Última raspagem: ${fmtDateTime.format(new Date(iso))}`
+    : "Última raspagem: sem dado";
+}
+
+function scrapeStateLabel(status) {
+  if (status === "ok") return "ok";
+  if (status === "falhou") return "falhou";
+  if (status === "raspando") return "raspando";
+  if (status === "pulado") return "pulado";
+  if (status === "sem dado") return "sem dado";
+  return "pendente";
+}
+
+const SCRAPE_RETRY_TITLE = {
+  yahoo: "Tenta de novo Yahoo, OpLab, Fundamentus e Cadeia",
+  oplab: "Tenta de novo OpLab e Cadeia",
+  fundamentus: "Tenta de novo Fundamentus e Cadeia",
+  oplab_cadeia: "Tenta de novo Cadeia",
+};
+
+function paintScrapePassos(passos, retryCompleto) {
+  const host = document.getElementById("scrape-passos");
+  if (!host) return;
+  const items = (passos && passos.length)
+    ? passos
+    : [
+      { id: "yahoo", label: "Yahoo", status: "pendente" },
+      { id: "oplab", label: "OpLab", status: "pendente" },
+      { id: "fundamentus", label: "Fundamentus", status: "pendente" },
+      { id: "oplab_cadeia", label: "Cadeia", status: "pendente" },
+    ];
+  host.innerHTML = items.map((p) => {
+    const st = p.status || "pendente";
+    const title = p.erro ? ` title="${String(p.erro).replace(/"/g, "&quot;")}"` : "";
+    const retryTitle = retryCompleto
+      ? "Tenta de novo tudo (última raspagem tem mais de 1 hora)"
+      : (SCRAPE_RETRY_TITLE[p.id] || "Tenta de novo");
+    const retry = st === "falhou"
+      ? `<button type="button" class="scrape-retry" data-passo="${p.id}" aria-label="${retryTitle}" title="${retryTitle}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg></button>`
+      : "";
+    return `<li data-step="${p.id}" data-status="${st}"${title}><span class="scrape-step-name">${p.label}</span>${retry}<span class="scrape-step-state">${scrapeStateLabel(st)}</span></li>`;
+  }).join("");
+}
+
+let scrapePollTimer = null;
+let scrapePolling = false;
+
+let scrapeRetryCompleto = false;
+
+function applyScrapeView(data) {
+  scrapeRetryCompleto = data.retry_completo === true;
+  paintScrapeUltima(data.generated_at);
+  paintScrapePassos(data.passos, scrapeRetryCompleto);
+  const statusEl = document.getElementById("scrape-status");
+  const button = document.getElementById("btn-raspar");
+  if (data.status === "running") {
+    if (button) button.disabled = true;
+    if (statusEl) statusEl.textContent = "raspando...";
+    return;
+  }
+  if (button) button.disabled = false;
+  if (!statusEl) return;
+  if (data.erro) statusEl.textContent = `Erro: ${data.erro}`;
+  else if (data.generated_at) statusEl.textContent = `Concluída em ${fmtDateTime.format(new Date(data.generated_at))}`;
+}
+
+async function syncScrapePanel() {
+  try {
+    const res = await fetch("/api/scrape/status");
+    if (res.status === 401) return;
+    if (!res.ok) return;
+    const data = await res.json();
+    applyScrapeView(data);
+    if (data.status === "running") pollScrapeStatus();
+  } catch (_err) {
+    /* sem dado permanece no markup */
+  }
+}
+
+function loadScrapeUltima() {
+  return syncScrapePanel();
+}
+
 async function loadConfig() {
   const cfg = await (await fetch("/api/config")).json();
   const form = document.getElementById("form-config");
@@ -502,9 +610,14 @@ async function loadConfig() {
       el.value = vencLabel(v);
       continue;
     }
+    if (k === "meta_premio_30d") {
+      el.value = num(v, "pct");
+      continue;
+    }
     el.value = Array.isArray(v) ? v.join(", ") : v;
   }
   paintCalcAlvo();
+  await syncScrapePanel();
 }
 
 function renderAuthControl() {
@@ -606,7 +719,10 @@ async function pollScrapeStatus(attempt = 0) {
   const statusEl = document.getElementById("scrape-status");
   const button = document.getElementById("btn-raspar");
   if (!statusEl || !button) return;
+  if (attempt === 0 && scrapePolling) return;
+  scrapePolling = true;
   if (attempt >= MAX_SCRAPE_POLLS) {
+    scrapePolling = false;
     button.disabled = false;
     statusEl.textContent = "Tempo esgotado, verifique manualmente.";
     return;
@@ -614,6 +730,7 @@ async function pollScrapeStatus(attempt = 0) {
   try {
     const res = await fetch("/api/scrape/status");
     if (res.status === 401) {
+      scrapePolling = false;
       authState.admin = false;
       removeConfigForNonAdmin();
       renderAuthControl();
@@ -623,38 +740,60 @@ async function pollScrapeStatus(attempt = 0) {
     }
     const data = await res.json();
     if (res.ok && data.status === "running") {
-      statusEl.textContent = "raspando...";
-      window.setTimeout(() => pollScrapeStatus(attempt + 1), 2000);
+      applyScrapeView(data);
+      if (scrapePollTimer) window.clearTimeout(scrapePollTimer);
+      scrapePollTimer = window.setTimeout(() => {
+        scrapePollTimer = null;
+        pollScrapeStatus(attempt + 1);
+      }, 2000);
       return;
     }
+    scrapePolling = false;
     button.disabled = false;
     if (!res.ok) {
       statusEl.textContent = `Não foi possível consultar a raspagem (HTTP ${res.status}).`;
     } else if (data.status === "idle") {
-      statusEl.textContent = data.erro
-        ? `Erro: ${data.erro}`
-        : (data.generated_at ? `Concluída em ${fmtDateTime.format(new Date(data.generated_at))}` : "Raspagem concluída.");
+      applyScrapeView(data);
+      if (!data.erro) {
+        statusEl.textContent = data.generated_at
+          ? `Concluída em ${fmtDateTime.format(new Date(data.generated_at))}`
+          : "Raspagem concluída.";
+        refreshVisibleData();
+      }
     } else {
       statusEl.textContent = "Não foi possível consultar a raspagem.";
     }
   } catch (_err) {
+    scrapePolling = false;
     button.disabled = false;
     statusEl.textContent = "Não foi possível consultar a raspagem, tente novamente.";
   }
 }
 
-async function startScrape() {
+async function retryScrapePasso(passo) {
+  if (!passo || scrapePolling) return;
+  if (scrapeRetryCompleto) {
+    await startScrape();
+    return;
+  }
+  await startScrape({ passo });
+}
+
+async function startScrape(opts) {
   const button = document.getElementById("btn-raspar");
   const statusEl = document.getElementById("scrape-status");
   const checkbox = document.getElementById("scrape-incluir-fundamentus");
   if (!button || !statusEl || !checkbox) return;
   button.disabled = true;
   statusEl.textContent = "raspando...";
+  const body = opts && opts.passo
+    ? { passo: opts.passo }
+    : { incluir_fundamentus: checkbox.checked };
   try {
     const res = await fetch("/api/scrape", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ incluir_fundamentus: checkbox.checked }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       if (res.status === 401) {
@@ -688,6 +827,12 @@ async function saveConfig() {
       );
     } else if (el.name === "calendario_ate") {
       body[el.name] = parseBrDate(el.value) || el.value;
+    } else if (el.name === "meta_premio_30d") {
+      const parsed = parsePct(el.value);
+      if (Number.isFinite(parsed)) {
+        body[el.name] = parsed;
+        el.value = num(parsed, "pct");
+      }
     } else if (CFG_NUM.includes(el.name)) {
       body[el.name] = Number(el.value);
     } else {
@@ -705,7 +850,13 @@ document.getElementById("form-config").addEventListener("submit", (e) => {
 document.getElementById("form-config").addEventListener("focusout", (e) => {
   if (e.target && e.target.classList.contains("edit") && e.target.id !== "calc-dias") saveConfig();
 });
-document.getElementById("btn-raspar").addEventListener("click", startScrape);
+document.getElementById("btn-raspar").addEventListener("click", () => startScrape());
+document.getElementById("scrape-passos").addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".scrape-retry");
+  if (!btn) return;
+  ev.preventDefault();
+  retryScrapePasso(btn.dataset.passo);
+});
 document.getElementById("login-form").addEventListener("submit", submitLogin);
 document.getElementById("login-cancel").addEventListener("click", closeLoginModal);
 document.getElementById("login-modal").addEventListener("click", (ev) => {
@@ -971,4 +1122,7 @@ document.getElementById("zoom-reset").addEventListener("click", () => applyUiZoo
 window.addEventListener("resize", fitCards);
 applyUiZoom(currentZoom());
 
-initializeAuth().finally(() => loadVencimentos().then(loadDashboard));
+initializeAuth().finally(() => {
+  loadVencimentos().then(loadDashboard);
+  if (authState.admin) syncScrapePanel();
+});
