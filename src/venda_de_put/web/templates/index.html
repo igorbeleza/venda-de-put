@@ -185,7 +185,8 @@
         </label>
         <div class="scrape-panel">
           <h3>Raspagem</h3>
-          <p class="calc-help">Dispara a coleta de dados fora dos horários agendados, sem esperar o próximo horário do timer.</p>
+          <p class="calc-help">Dispara a coleta de dados fora dos horários agendados, sem esperar o próximo horário do timer. Coleta preços e histórico (Yahoo), volatilidade implícita e cadeia de opções (OpLab) e, se marcado abaixo, indicadores fundamentalistas (Fundamentus).</p>
+          <p class="scrape-warn">Evite clicar repetidas vezes em pouco tempo: cada raspagem faz várias requisições reais aos sites de origem, e fazer isso com frequência pode levar esses sites a bloquear ou limitar o acesso da ferramenta, prejudicando a coleta agendada também.</p>
           <label class="toggle"><input type="checkbox" id="scrape-incluir-fundamentus"> Incluir Fundamentus (https://fundamentus.com.br/resultado.php)</label>
           <button type="button" id="btn-raspar">Raspar dados agora</button>
           <p id="scrape-status" class="scrape-status" aria-live="polite"></p>

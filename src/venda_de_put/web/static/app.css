@@ -1098,6 +1098,15 @@ input.edit, .config-form input.edit {
   color: var(--ink-2);
 }
 .scrape-status { margin: 0; min-height: 1.2em; color: var(--ink-2); font-size: 0.86rem; }
+.scrape-warn {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
 
 .modal-overlay {
   position: fixed;
