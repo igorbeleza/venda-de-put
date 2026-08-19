@@ -47,6 +47,56 @@ def test_pl_negativo_vai_para_o_fim():
     assert out["POS3"].n_pl == 1
 
 
+def _varejo(ticker, **kw):
+    defaults = dict(
+        grupo="Varejo", pl=5, pvp=1, ev_ebitda=4, mrg_liq=0.2,
+        liq_corr=2, roic=0.2, roe=0.3, div_pat=0.1, cresc=0.2,
+    )
+    defaults.update(kw)
+    return AssetInput(ticker=ticker, **defaults)
+
+
+def test_bloco_consist_ausente_anula_score_f():
+    # Consist é um campo só. Sem Cresc. Rec.5a o Excel anula o ScoreF inteiro.
+    incompleto = _varejo("INC3", cresc=None)
+    completo = _varejo("COM3", roe=0.10)
+    out = {a.ticker: a for a in score_fundamentals([incompleto, completo])}
+    assert out["INC3"].consist is None
+    assert out["INC3"].qualid is not None
+    assert out["INC3"].score_f is None
+    assert out["INC3"].pct_f is None
+    assert out["COM3"].score_f is not None
+    assert out["COM3"].pct_f == 1.0
+
+
+def test_campo_isolado_na_saude_nao_anula_score_f():
+    # AVERAGE ignora vazio: falta um campo do bloco, o bloco ainda existe.
+    so_div = _varejo("DIV3", liq_corr=None)
+    out = score_fundamentals([so_div, _varejo("PAR3")])[0]
+    assert out.saude is not None
+    assert out.score_f is not None
+
+
+def test_financeiro_saude_ausente_nao_anula_score_f():
+    # Saúde é None por construção no ramo; não é bloco faltante.
+    out = score_fundamentals([
+        _fin("AAA", roe=0.30, mrg=0.20, pl=8, pvp=1.0, cresc=0.10),
+    ])[0]
+    assert out.saude is None
+    assert out.score_f is not None
+
+
+def test_financeiro_consist_ausente_anula_score_f():
+    out = score_fundamentals([
+        _fin("AAA", roe=0.30, mrg=0.20, pl=8, pvp=1.0, cresc=None),
+        _fin("BBB", roe=0.10, mrg=0.05, pl=20, pvp=3.0, cresc=0.01),
+    ])
+    by = {a.ticker: a for a in out}
+    assert by["AAA"].score_f is None
+    assert by["AAA"].pct_f is None
+    assert by["BBB"].score_f is not None
+
+
 def test_paridade_brsr6_itub4_contra_excel():
     import json
     from pathlib import Path

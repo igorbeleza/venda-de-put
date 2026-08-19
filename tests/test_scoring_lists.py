@@ -29,6 +29,22 @@ def test_sinal_aceso_entra_lista_combinada():
     assert asset.score_t == (20.0 - 19.5) / 19.5
 
 
+def test_score_t_vazio_quando_sinal_ausente():
+    # Sem MM200 o SINAL some. A planilha exige X2 preenchido nos dois ramos
+    # do ScoreT; IFR sozinho não entra na ②.
+    fund = score_fundamentals([
+        AssetInput("AUAU3", "Varejo", 5, 1, 4, 0.2, 2, 0.2, 0.3, 0.1, 0.2)
+    ])[0]
+    asset = apply_technical(
+        fund, TechnicalInput(3.16, None, 41.81, 3.02, None, None), AppConfig()
+    )
+    assert asset.sinal is None
+    assert asset.technicals.ifr == 41.81
+    assert asset.score_t is None
+    lists = build_lists([asset])
+    assert lists.tecnico == []
+
+
 def test_timing_aguardar_when_entrada_fails_with_inputs_present():
     # IFR, preço e boll_inf presentes; IFR fora da banda → aguardar; SINAL "—"
     fund = score_fundamentals([

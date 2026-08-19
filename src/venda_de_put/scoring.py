@@ -68,25 +68,15 @@ def score_fundamentals(assets: list[AssetInput]) -> list[FundScore]:
         consist = n_crsc
 
         if financeiro:
-            parts = []
-            if qualid is not None:
-                parts.append(0.50 * qualid)
-            if valuat is not None:
-                parts.append(0.30 * valuat)
-            if consist is not None:
-                parts.append(0.20 * consist)
-            score_f = sum(parts) if parts else None
+            if None in (qualid, valuat, consist):
+                score_f = None
+            else:
+                score_f = 0.50 * qualid + 0.30 * valuat + 0.20 * consist
         else:
-            parts = []
-            if qualid is not None:
-                parts.append(0.40 * qualid)
-            if saude is not None:
-                parts.append(0.25 * saude)
-            if valuat is not None:
-                parts.append(0.20 * valuat)
-            if consist is not None:
-                parts.append(0.15 * consist)
-            score_f = sum(parts) if parts else None
+            if None in (qualid, saude, valuat, consist):
+                score_f = None
+            else:
+                score_f = 0.40 * qualid + 0.25 * saude + 0.20 * valuat + 0.15 * consist
 
         prelim.append((a, {
             "n_roe": n_roe, "n_roic": n_roic, "n_mrgl": n_mrgl,
@@ -145,7 +135,7 @@ def apply_technical(fund: FundScore, tech: TechnicalInput, cfg: AppConfig) -> Sc
 
     if sinal == SINAL_VENDER and tech.preco is not None and tech.boll_inf is not None:
         score_t = (tech.preco - tech.boll_inf) / tech.boll_inf
-    elif tech.ifr is not None:
+    elif sinal is not None and tech.ifr is not None:
         score_t = 100 + tech.ifr / 1000
     else:
         score_t = None

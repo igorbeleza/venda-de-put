@@ -16,7 +16,7 @@ ScoreCu = ScoreC + linha/1e8     # AR; lista ③
 
 Não entram em ScoreF, PctF, ScoreT, ScoreC, tendência, timing nem SINAL. Sem eles, as quatro notas da tabela abaixo saem iguais.
 
-Neste app o desempate é o ticker (A–Z), não o número da linha. Só muda a ordem se dois papéis tiverem a **mesma** nota — caso raro. Não recalcula nada.
+Neste app o desempate é o ticker (A–Z), não o número da linha. Só muda a ordem se dois papéis tiverem a **mesma** nota. Isso é comum no PctF: a nota só assume `(k+1)/n` com `n` no tamanho do setor, então papéis de grupos diferentes colidem o tempo todo. O conjunto do top-10 só muda se um bloco de empate cruzar o 10º; a ordem dos empatados *dentro* da lista troca. Não recalcula ScoreF/PctF/ScoreT/ScoreC.
 
 ## Peças
 
@@ -55,7 +55,7 @@ Financeiro:  0,50·Qualid + 0,30·Valuat + 0,20·Consist
 Demais:      0,40·Qualid + 0,25·Saúde  + 0,20·Valuat + 0,15·Consist
 ```
 
-Só entram os blocos que existirem. Sem nenhum bloco → `sem dado`.
+Todos os blocos do ramo precisam existir. Um bloco vazio anula o ScoreF inteiro (`sem dado`) — o ativo some da ① e da ③. Faltar *um campo* dentro do bloco não anula: a média ignora o vazio, como o `AVERAGE` da planilha. Saúde vazia no Financeiro não conta: aquele ramo não usa o bloco.
 
 ### PctF
 
@@ -90,12 +90,13 @@ Padrão: IFR 10–50, folga 5% (`data/config.json`).
 Só ordena a lista ②. Duas fórmulas de propósito:
 
 ```
-com SINAL aceso:  ScoreT = (preço − Boll Inf) / Boll Inf     # ~0,00 a ~0,05
-sem SINAL:        ScoreT = 100 + IFR / 1000                  # ~100,01 a ~100,10
-sem IFR:          vazio  → fora da ②
+SINAL ► VENDER PUT:  ScoreT = (preço − Boll Inf) / Boll Inf     # ~0,00 a ~0,05
+SINAL — (apagado):   ScoreT = 100 + IFR / 1000                  # ~100,01 a ~100,10
+SINAL vazio:         vazio  → fora da ②
+sem IFR:             vazio  → fora da ②
 ```
 
-O `100 + …` é o truque da planilha: quem não tem SINAL vai para o fim, e entre esses ganha o IFR menor. Sem isso a ② ficaria vazia em dia sem entrada.
+SINAL vazio (falta tendência ou timing — ex.: sem MM200) não é o mesmo que SINAL `—`. A planilha exige Preço, Boll Inf **e** a coluna do SINAL preenchida nos dois ramos; sem isso o ScoreT some. O `100 + …` é o truque da planilha: quem tem SINAL `—` vai para o fim, e entre esses ganha o IFR menor. Sem isso a ② ficaria vazia em dia sem entrada.
 
 Não é “o IFR é o score”. Com SINAL aceso o IFR não entra no ScoreT — entra a distância da banda.
 
@@ -127,7 +128,7 @@ Empresas que se aceita carregar se exercido. Ignora IFR, banda e SINAL. Um papel
 Timing agora. Ordem típica:
 
 1. os que têm `► VENDER PUT`, do mais colado na banda ao mais longe (ainda dentro da folga);
-2. se sobrar vaga até 10, os sem SINAL com menor IFR (`ScoreT ≈ 100,0x`).
+2. se sobrar vaga até 10, os com SINAL `—` e menor IFR (`ScoreT ≈ 100,0x`). Sem SINAL (vazio) não entra.
 
 Exemplo do snapshot 17/08 12:49: seis com SINAL, depois POMO4 / TIMS3 / USIM5 / BBDC4 (IFR baixo, tendência `fora` ou timing que não fecha). BRAV3 com IFR ~40 e SINAL apagado não entra — ScoreT ~100,04 perde para IFR 17–23.
 
@@ -147,8 +148,9 @@ Yahoo close+à vista ──► MM200, IFR, Boll Inf                          │
                               │                                       ▼
                               ├─ tendência + timing ─► SINAL ──► ③ (só se aceso)
                               │         │
-                              │         ├─ aceso:  ScoreT = dist. da banda ─┐
-                              │         └─ apagado: ScoreT = 100+IFR/1000 ─┴► ②
+                              │         ├─ aceso:   ScoreT = dist. da banda ─┐
+                              │         ├─ —:       ScoreT = 100+IFR/1000 ──┴► ②
+                              │         └─ vazio:   sem ScoreT (fora da ②)
 ```
 
 ## O que não é

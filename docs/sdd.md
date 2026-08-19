@@ -66,6 +66,7 @@ Fórmulas e relação com as listas ①②③: `docs/scoring.md`.
 - Tendência alta ⇔ preço > MM200.
 - Entrada ⇔ IFR ∈ [ifr_min, ifr_max] e preço ≤ Boll Inf × (1+folga).
 - SINAL acende só com os dois.
+- Bloco do ScoreF vazio anula a nota (não soma parcial). ScoreT exige SINAL preenchido (`►` ou `—`); SINAL vazio tira da ②.
 - ① = 10 menores PctF; ② = 10 menores ScoreT; ③ = ScoreC (= PctF se SINAL). PctFu/ScoreTu/ScoreCu da planilha são só desempate (`ROW()/1e8`); o app usa o ticker.
 
 Detalhe numérico: o código e os testes. Paridade Excel dos ranks: fixtures em `tests/fixtures/`.

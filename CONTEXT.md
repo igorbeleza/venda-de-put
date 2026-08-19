@@ -67,18 +67,18 @@ Interseção fundamento × timing, ordenada por ScoreC.
 _Avoid_: média simples das duas listas
 
 **SINAL**:
-`► VENDER PUT` só quando tendência é alta e timing é entrada. Caso contrário não acende.
-_Avoid_: score sozinho como ordem de venda
+`► VENDER PUT` só quando tendência é alta e timing é entrada. `—` quando os dois lados existem e não fecham. Vazio se falta tendência ou timing (ex.: sem MM200).
+_Avoid_: score sozinho como ordem de venda; tratar SINAL vazio como `—`
 
 ## Notas
 
 **ScoreF**:
-Nota fundamental setorial (ranks de ROE, dívida, múltiplos, etc. dentro do grupo).
-_Avoid_: score absoluto entre setores
+Nota fundamental setorial (ranks de ROE, dívida, múltiplos, etc. dentro do grupo). Bloco do ramo vazio anula a nota — o ativo some da ① e da ③.
+_Avoid_: score absoluto entre setores; soma parcial que premia falta de dado
 
 **ScoreT**:
-Ordenação do timing. Com sinal aceso, quanto mais perto da banda inferior, melhor.
-_Avoid_: IFR como score
+Ordenação do timing. Com SINAL aceso, quanto mais perto da banda inferior, melhor. Com SINAL `—`, `100 + IFR/1000`. Sem SINAL (vazio) não há ScoreT.
+_Avoid_: IFR como score; ScoreT com SINAL vazio
 
 **ScoreC**:
 PctF do ativo quando o SINAL está aceso; senão vazio. Ordena a lista combinada.
