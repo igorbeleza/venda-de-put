@@ -389,7 +389,13 @@ def create_app(data_dir: Path) -> FastAPI:
                 for k in list(it):
                     if k.startswith("n_"):
                         it.pop(k, None)
-        return {"ativos": items, "total": len(items)}
+        stamp = next((s for s in snap.stamps if s.source == "yahoo"), None)
+        return {
+            "ativos": items,
+            "total": len(items),
+            "carimbo": None if stamp is None else _stamp_out(stamp),
+            "generated_at": snap.generated_at.isoformat(),
+        }
 
     @app.get("/api/dados")
     def dados():

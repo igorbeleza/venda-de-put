@@ -141,7 +141,7 @@ def test_instrucoes_renderizam_como_dashboard(data_dir):
     assert ".instrucoes-card" in css
     assert ".instrucoes-list" in css
     assert "white-space: pre-wrap" not in css
-    assert "bui31" in html
+    assert "bui32" in html
 
 
 def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
@@ -223,3 +223,38 @@ def test_home_markup_has_seven_panes_and_mobile_css(data_dir):
     assert "function maskBrDate" in js
     assert "feriado-data-cal" in html
     assert "showPicker" in js
+    assert '["preco", "preço (raspagem)"]' in js
+    assert js.index('["grupo", "grupo"]') < js.index('["preco", "preço (raspagem)"]')
+    assert js.index('["preco", "preço (raspagem)"]') < js.index('["score_f", "ScoreF"]')
+    assert "carimbo-ativos" in js
+
+
+def test_ativos_declara_preco_da_ultima_raspagem(data_dir):
+    client = TestClient(create_app(data_dir=data_dir))
+    html = client.get("/").text
+    pane = html.split('id="pane-ativos"', 1)[1].split('id="pane-dados"', 1)[0]
+    assert "list-banner" in pane
+    assert "list-block" in pane
+    assert "narrative" in pane
+    assert "última raspagem" in pane.lower()
+    assert "15 minutos" in pane
+    assert 'id="carimbo-ativos"' in pane
+    payload = client.get("/api/ativos").json()
+    petr = next(a for a in payload["ativos"] if a["ticker"] == "PETR4")
+    assert petr["preco"] == 41.75
+    stamp = payload["carimbo"]
+    assert stamp["source"] == "yahoo"
+    assert stamp["ok"] is True
+    assert stamp["collected_at"]
+
+
+def test_dados_declara_fundamentus(data_dir):
+    client = TestClient(create_app(data_dir=data_dir))
+    html = client.get("/").text
+    pane = html.split('id="pane-dados"', 1)[1].split('id="pane-setores"', 1)[0]
+    assert "list-banner" in pane
+    assert "list-block" in pane
+    assert "narrative" in pane
+    assert "Fundamentus" in pane
+    assert "fundamentus.com.br" in pane
+    assert 'id="carimbo-dados"' in pane

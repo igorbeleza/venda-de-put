@@ -497,7 +497,8 @@ a { color: var(--verde); }
   font-weight: 600;
 }
 
-#carimbo { color: var(--ink-3); font-size: 0.88rem; }
+#carimbo,
+#carimbo-ativos { color: var(--ink-3); font-size: 0.88rem; }
 
 .date-combo-label { display: flex; align-items: center; gap: 8px; }
 .date-combo {

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="static/app.css?v=bui31">
+  <link rel="stylesheet" href="static/app.css?v=bui32">
   <script>
     (function () {
       var t, z = 1;
@@ -130,20 +130,33 @@
       </div>
     </section>
     <section id="pane-ativos" class="pane" hidden>
-      <div class="toolbar">
-        <label>Filtro
-          <input type="search" id="filtro-ativos" placeholder="ticker ou grupo">
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="mostrar-calculo">
-          mostrar cálculo
-        </label>
-      </div>
-      <div class="table-wrap"><table id="tbl-ativos" class="data-table"></table></div>
+      <article class="list-block">
+        <div class="list-banner">
+          <h2>Ativos</h2>
+          <p class="narrative">O preço à vista desta tabela é o da última raspagem (Yahoo), não o pregão ao vivo. Cotações cerca de 15 minutos atrasadas em relação ao horário da coleta. Indicadores, strike e prêmio partem desse número.</p>
+        </div>
+        <div class="toolbar">
+          <label>Filtro
+            <input type="search" id="filtro-ativos" placeholder="ticker ou grupo">
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="mostrar-calculo">
+            mostrar cálculo
+          </label>
+          <span id="carimbo-ativos">Atualizado em —</span>
+        </div>
+        <div class="table-wrap"><table id="tbl-ativos" class="data-table"></table></div>
+      </article>
     </section>
     <section id="pane-dados" class="pane" hidden>
-      <p id="carimbo-dados" class="carimbo-linha"></p>
-      <div class="table-wrap"><table id="tbl-dados" class="data-table"></table></div>
+      <article class="list-block">
+        <div class="list-banner">
+          <h2>Dados do Fundamentus</h2>
+          <p class="narrative">Indicadores fundamentalistas do site Fundamentus (https://fundamentus.com.br/resultado.php), gravados no snapshot. A cotação desta aba é a do Fundamentus — não o preço à vista da última raspagem do Yahoo, que fica na aba Ativos.</p>
+        </div>
+        <p id="carimbo-dados" class="carimbo-linha"></p>
+        <div class="table-wrap"><table id="tbl-dados" class="data-table"></table></div>
+      </article>
     </section>
     <section id="pane-setores" class="pane" hidden>
       <div class="table-wrap"><table id="tbl-setores" class="data-table"></table></div>
@@ -246,6 +259,6 @@
       </div>
     </form>
   </div>
-  <script src="static/app.js?v=bui31"></script>
+  <script src="static/app.js?v=bui32"></script>
 </body>
 </html>

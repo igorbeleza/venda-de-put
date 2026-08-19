@@ -397,6 +397,7 @@ def test_ativos_roe_is_fundamentals_not_rank(data_dir):
     # seeded fixture: _fund("PETR4", pl=6.0, roe=0.22, ...)
     assert petr["roe"] == 0.22
     assert petr["pl"] == 6.0
+    assert petr["preco"] == 41.75
     assert petr["iv_rank"] == 40
     assert petr["iv_percentile"] == 0.55
     assert petr["iv"] == 0.35

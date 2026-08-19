@@ -395,7 +395,9 @@ document.querySelectorAll(".tab").forEach((btn) => {
 });
 
 const ATIVOS_BASE = [
-  ["ticker", "ticker"], ["grupo", "grupo"], ["score_f", "ScoreF"],
+  ["ticker", "ticker"], ["grupo", "grupo"],
+  ["preco", "preço (raspagem)"],
+  ["score_f", "ScoreF"],
   ["roe", "ROE"], ["pl", "P/L"], ["pvp", "P/VP"], ["dy", "DY"],
   ["sinal", "SINAL"], ["mm200", "MM200"], ["ifr", "IFR"], ["boll_inf", "Boll Inf"],
   ["score_c", "ScoreC"],
@@ -527,10 +529,20 @@ function bindSort(tableId, render) {
   };
 }
 
+function paintCarimbo(el, stamp, fallbackIso) {
+  if (!el) return;
+  if (stamp && stamp.collected_at) {
+    el.textContent = stampText(stamp.collected_at) + (stamp.ok ? "" : " · erro");
+    return;
+  }
+  el.textContent = fallbackIso ? stampText(fallbackIso) : "Atualizado em —";
+}
+
 async function loadAtivos() {
   const calc = document.getElementById("mostrar-calculo").checked ? 1 : 0;
   const res = await fetch("api/ativos?calculo=" + calc);
   const data = await res.json();
+  paintCarimbo(document.getElementById("carimbo-ativos"), data.carimbo, data.generated_at);
   ativosRows = data.ativos || [];
   renderAtivos();
 }
@@ -574,10 +586,7 @@ function fmtDados(key, raw) {
 async function loadDados() {
   const res = await fetch("api/dados");
   const data = await res.json();
-  const c = data.carimbo;
-  document.getElementById("carimbo-dados").textContent = c
-    ? stampText(c.collected_at) + (c.ok ? "" : " · erro")
-    : stampText(data.generated_at);
+  paintCarimbo(document.getElementById("carimbo-dados"), data.carimbo, data.generated_at);
   dadosRows = data.rows || [];
   renderDados();
 }
