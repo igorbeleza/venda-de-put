@@ -363,7 +363,7 @@ def cli_scrape(
 ) -> int:
     root = resolve_data_dir(data_dir)
     current = snapshot_current(root)
-    history = snapshot_history(root)
+    history_dir = snapshot_history(root)
     cfg = load_config(root / "config.json")
     universe = json.loads((root / "universe.json").read_text(encoding="utf-8"))
     holidays = load_holidays(root / "feriados.json")
@@ -375,6 +375,8 @@ def cli_scrape(
     elif legacy.is_file():
         previous = read_snapshot(legacy)
     from venda_de_put.sources.fundamentus import FundamentusHttp
+    from venda_de_put.sources.brapi import BrapiSpotHttp
+    from venda_de_put.sources.cotahist import CotahistBootstrap
     from venda_de_put.sources.oplab import OplabHttp
     from venda_de_put.sources.yahoo import YahooHttp
     from venda_de_put.scrape_progress import (
@@ -409,6 +411,8 @@ def cli_scrape(
         force_fundamentus=force_fundamentus,
         progress=FileProgress(prog_file),
         only_steps=only_steps,
+        spot=BrapiSpotHttp(),
+        history=CotahistBootstrap(root / "cotahist", now=now),
     )
-    write_snapshot(snap, current, history, archive_if_1600=True)
+    write_snapshot(snap, current, history_dir, archive_if_1600=True)
     return 0

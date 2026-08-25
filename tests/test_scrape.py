@@ -594,3 +594,19 @@ def test_force_fundamentus_none_keeps_default_behavior():
     )
     assert fund2.calls == 0
 
+
+def test_cli_scrape_instancia_brapi_e_cotahist():
+    src = Path("src/venda_de_put/scrape.py").read_text(encoding="utf-8")
+    assert "BrapiSpotHttp" in src
+    assert "CotahistBootstrap" in src
+    assert "spot=BrapiSpotHttp()" in src
+    assert 'CotahistBootstrap(root / "cotahist"' in src
+    assert "history=CotahistBootstrap" in src
+    assert "history_dir = snapshot_history(root)" in src
+    assert "write_snapshot(snap, current, history_dir" in src
+    assert "history = snapshot_history(root)" not in src
+
+
+def test_env_example_documenta_brapi_token():
+    text = Path(".env.example").read_text(encoding="utf-8")
+    assert "VENDA_DE_PUT_BRAPI_TOKEN=" in text
