@@ -1,13 +1,13 @@
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 
 from venda_de_put.config import AppConfig
 from venda_de_put.models import CandleSeries, Fundamentals, IvPoint, PutQuote
 from venda_de_put.scrape import run_scrape
-from venda_de_put.scrape_progress import FileProgress, read_progress
+from venda_de_put.scrape_progress import FileProgress, PRICE_NOTICE, read_progress
 from venda_de_put.snapshot import read_snapshot, write_snapshot
 from venda_de_put.tz import TZ
-
 
 class FakePrice:
     def __init__(self, series: dict[str, CandleSeries]):
@@ -18,6 +18,51 @@ class FakePrice:
         self.calls += 1
         return {t: self.series[t] for t in tickers if t in self.series}
 
+class FakeSpot:
+    def __init__(self, spots: dict[str, float]):
+        self.spots = spots
+        self.calls: list[list[str]] = []
+
+    def fetch_spots(self, tickers: list[str]) -> dict[str, float]:
+        self.calls.append(list(tickers))
+        return {t: self.spots[t] for t in tickers if t in self.spots}
+
+
+class BoomSpot:
+    def __init__(self):
+        self.calls: list[list[str]] = []
+
+    def fetch_spots(self, tickers: list[str]) -> dict[str, float]:
+        self.calls.append(list(tickers))
+        raise RuntimeError("brapi down")
+
+
+class FakeHistory:
+    def __init__(self, series: dict[str, CandleSeries]):
+        self.series = series
+        self.calls: list[list[str]] = []
+
+    def fetch_history(self, tickers: list[str]) -> dict[str, CandleSeries]:
+        self.calls.append(list(tickers))
+        return {t: self.series[t] for t in tickers if t in self.series}
+
+
+class BoomPrice:
+    def fetch(self, tickers: list[str]) -> dict[str, CandleSeries]:
+        raise RuntimeError("yahoo down")
+
+
+def _serie_ontem(ticker: str, now: datetime, preco: float = 40.0) -> CandleSeries:
+    yesterday = int(datetime(2026, 8, 14, 18, 0, tzinfo=TZ).timestamp())
+    return CandleSeries(
+        ticker=ticker,
+        closes=[30.0] * 210,
+        preco=preco,
+        max_52=45.0,
+        min_52=20.0,
+        collected_at=now,
+        timestamps=[yesterday] * 210,
+    )
 
 class FakeIv:
     def __init__(self, pts: dict[str, IvPoint], fail: bool = False):
@@ -149,14 +194,13 @@ def test_empty_yahoo_fetch_stamps_failed_and_reuses_previous():
     stamp = next(s for s in second.stamps if s.source == "yahoo")
     assert stamp.ok is False
     assert stamp.stale is True
-    assert stamp.error
+    assert stamp.error == PRICE_NOTICE
     petr = next(a for a in second.assets if a.ticker == "PETR4")
     assert petr.technicals is not None
     assert petr.technicals.iv == 0.35
     assert petr.technicals.preco == 41.75
     assert petr.technicals.mm200 == petr_first.technicals.mm200
     assert petr.technicals.ifr == petr_first.technicals.ifr
-
 
 def test_yahoo_half_tickers_stamps_failed_and_merges_previous():
     now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
@@ -186,10 +230,199 @@ def test_yahoo_half_tickers_stamps_failed_and_merges_previous():
     )
     stamp = next(s for s in second.stamps if s.source == "yahoo")
     assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
     vale = next(a for a in second.assets if a.ticker == "VALE3")
     assert vale.technicals is not None
     assert vale.technicals.preco == 40.0
 
+
+def test_yahoo_cobre_todos_nao_chama_spot_nem_history():
+    price, iv, fund, universe, now = _petr_inputs()
+    spot = FakeSpot({"PETR4": 99.0})
+    hist = FakeHistory({})
+    snap = run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), now,
+        spot=spot, history=hist,
+    )
+    assert spot.calls == []
+    assert hist.calls == []
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert stamp.error is None
+
+
+def test_yahoo_perde_com_tecnico_anterior_brapi_atualiza_preco():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    spot = FakeSpot({"PETR4": 50.0})
+    hist = FakeHistory({})
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=spot, history=hist,
+    )
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 50.0
+    assert petr.technicals.mm200 == petr_first.technicals.mm200
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert spot.calls[0] == ["PETR4"]
+    assert hist.calls == []
+
+
+def test_yahoo_perde_brapi_vazio_reusa_tudo_e_avisa():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=FakeSpot({}),
+    )
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == petr_first.technicals.preco
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+    assert stamp.stale is True
+
+
+def test_sem_anterior_cotahist_mais_spot_calcula_na_serie():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now)})
+    spot = FakeSpot({"PETR4": 41.75})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=spot, history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 41.75
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert hist.calls[0] == ["PETR4"]
+
+
+def test_sem_anterior_cotahist_falha_sem_spot_sem_dado():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco is None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+
+
+def test_price_fetch_excecao_ainda_chama_brapi():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    spot = FakeSpot({"PETR4": 50.0})
+    second = run_scrape(
+        BoomPrice(), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=spot,
+    )
+    assert spot.calls
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 50.0
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+
+
+def test_sem_anterior_cotahist_sem_spot_avisa():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now, preco=40.0)})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 40.0
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+    assert hist.calls[0] == ["PETR4"]
+
+
+def test_snapshot_sem_dado_ainda_e_frio_na_proxima():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=FakeHistory({}),
+    )
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    assert petr_first.technicals.preco is None
+    assert petr_first.technicals.mm200 is None
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now, preco=40.0)})
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=FakeSpot({}), history=hist,
+    )
+    assert hist.calls == [["PETR4"]]
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 40.0
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+
+
+def test_dois_de_tres_yahoo_sem_brapi_avisa():
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
+    universe = {"PETR4": "A", "VALE3": "B", "ITUB4": "C"}
+    series = {
+        t: CandleSeries(t, [30.0] * 210, 40.0, 45.0, 20.0, now)
+        for t in universe
+    }
+    first = run_scrape(
+        FakePrice(series),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(), universe, set(), now,
+    )
+    second = run_scrape(
+        FakePrice({"PETR4": series["PETR4"], "VALE3": series["VALE3"]}),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(), universe, set(), now, previous=first,
+    )
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+    itub = next(a for a in second.assets if a.ticker == "ITUB4")
+    assert itub.technicals.preco == 40.0
+
+
+def test_yahoo_perde_um_brapi_cobre_passo_ok():
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
+    universe = {"PETR4": "A", "VALE3": "B", "ITUB4": "C"}
+    series = {
+        t: CandleSeries(t, [30.0] * 210, 40.0, 45.0, 20.0, now)
+        for t in universe
+    }
+    first = run_scrape(
+        FakePrice(series),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(), universe, set(), now,
+    )
+    second = run_scrape(
+        FakePrice({"PETR4": series["PETR4"], "VALE3": series["VALE3"]}),
+        FakeIv({t: IvPoint(t, 0.3, 10, 0.2) for t in universe}),
+        FakeFund([]),
+        AppConfig(), universe, set(), now, previous=first,
+        spot=FakeSpot({"ITUB4": 41.0}),
+    )
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    itub = next(a for a in second.assets if a.ticker == "ITUB4")
+    assert itub.technicals.preco == 41.0
+    assert itub.technicals.mm200 == next(
+        a.technicals.mm200 for a in first.assets if a.ticker == "ITUB4"
+    )
 
 def test_fundamentus_not_fetched_at_1100_when_previous_exists():
     price, iv, fund, universe, now16 = _petr_inputs()

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import json
+from dataclasses import replace
 from datetime import date, datetime
+import json
 from pathlib import Path
 import time
 from typing import Optional
 
 from venda_de_put.calendar_b3 import load_holidays
 from venda_de_put.config import load_config
-from venda_de_put.indicators import bollinger_lower, hv_log, rsi_wilder, sma
+from venda_de_put.indicators import apply_spot_as_last_period, bollinger_lower, hv_log, rsi_wilder, sma
 from venda_de_put.models import (
     AppConfig,
     AssetInput,
@@ -22,8 +23,16 @@ from venda_de_put.models import (
 from venda_de_put.scoring import apply_technical, build_lists, score_fundamentals
 from venda_de_put.paths import data_dir as resolve_data_dir
 from venda_de_put.paths import snapshot_current, snapshot_history
+from venda_de_put.scrape_progress import PRICE_NOTICE
 from venda_de_put.snapshot import read_snapshot, write_snapshot
-from venda_de_put.sources.types import ChainSource, FundamentalsSource, IvSource, PriceSource
+from venda_de_put.sources.types import (
+    ChainSource,
+    FundamentalsSource,
+    HistoryBootstrap,
+    IvSource,
+    PriceSource,
+    SpotSource,
+)
 from venda_de_put.strike import recommended_tickers
 from venda_de_put.tz import TZ
 
@@ -62,6 +71,12 @@ def should_fetch_fundamentus(
             break
     return _around_hhmm(local, cfg.fundamentus_time) or not has_today
 
+def _tecnico_aproveitavel(tech: TechnicalInput | None) -> bool:
+    return tech is not None and (
+        tech.preco is not None or tech.mm200 is not None
+    )
+
+
 
 def run_scrape(
     price: PriceSource,
@@ -77,32 +92,65 @@ def run_scrape(
     force_fundamentus: bool | None = None,
     progress: object | None = None,
     only_steps: tuple[str, ...] | list[str] | None = None,
+    spot: SpotSource | None = None,
+    history: HistoryBootstrap | None = None,
 ) -> Snapshot:
     tickers = list(universe.keys())
     stamps: list[SourceStamp] = []
     wanted = None if only_steps is None else set(only_steps)
 
     series: dict = {}
+    yahoo_ok: set[str] = set()
+    spots: dict[str, float] = {}
     if wanted is None or "yahoo" in wanted:
         _prog(progress, "yahoo", "raspando")
         try:
             series = price.fetch(tickers)
-            # YahooHttp swallows per-ticker failures and may return {}; treat zero
-            # matches as a failed source so the stamp is not ok=True on total outage.
-            matched = sum(1 for t in tickers if t in series)
-            if not tickers or matched * 2 < len(tickers):
-                err = "fewer than half of requested tickers" if tickers else "no tickers"
-                stamps.append(SourceStamp("yahoo", now, False, err, True))
-                _prog(progress, "yahoo", "falhou", err)
+        except Exception:
+            series = {}
+        yahoo_ok = set(series)
+        faltou = [t for t in tickers if t not in yahoo_ok]
+        if faltou and spot is not None:
+            try:
+                spots = dict(spot.fetch_spots(faltou))
+            except Exception:
+                spots = {}
+        prev_tech_early = {}
+        if previous is not None:
+            prev_tech_early = {
+                a.ticker: a.technicals for a in previous.assets
+            }
+        frios = [
+            t for t in faltou
+            if not _tecnico_aproveitavel(prev_tech_early.get(t))
+        ]
+        if frios and history is not None:
+            try:
+                hist = dict(history.fetch_history(frios))
+            except Exception:
+                hist = {}
+            for t, cs in list(hist.items()):
+                px = spots.get(t)
+                if px is not None:
+                    closes = apply_spot_as_last_period(
+                        cs.closes, px, cs.timestamps or None, now
+                    )
+                    hist[t] = replace(cs, closes=closes, preco=px)
+            series.update(hist)
+        if not tickers:
+            err = "no tickers"
+            stamps.append(SourceStamp("yahoo", now, False, err, True))
+            _prog(progress, "yahoo", "falhou", err)
+        else:
+            live = yahoo_ok | set(spots)
+            if any(t not in live for t in tickers):
+                stamps.append(SourceStamp("yahoo", now, False, PRICE_NOTICE, True))
+                _prog(progress, "yahoo", "falhou", PRICE_NOTICE)
             else:
                 stamps.append(SourceStamp("yahoo", now, True, None, False))
                 _prog(progress, "yahoo", "ok")
-        except Exception as e:
-            stamps.append(SourceStamp("yahoo", now, False, str(e), True))
-            _prog(progress, "yahoo", "falhou", str(e))
     else:
         _keep_stamp(stamps, previous, "yahoo")
-
     iv_pts: dict[str, IvPoint] = {}
     if wanted is None or "oplab" in wanted:
         _prog(progress, "oplab", "raspando")
@@ -191,13 +239,13 @@ def run_scrape(
             hv = hv_log(candle.closes, cfg.hv_periodos)
             preco = candle.preco
         elif prev is not None:
-            mm200, ifr, boll, hv, preco = (
+            mm200, ifr, boll, hv = (
                 prev.mm200,
                 prev.ifr,
                 prev.boll_inf,
                 prev.hv,
-                prev.preco,
             )
+            preco = spots.get(fund.ticker, prev.preco)
         else:
             mm200 = ifr = boll = hv = preco = None
         if ivp is not None:

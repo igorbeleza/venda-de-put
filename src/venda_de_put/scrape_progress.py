@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 RETRY_MAX_AGE = timedelta(hours=1)
+PRICE_NOTICE = (
+    "A consulta de preço falhou; os dados na tela podem ser os da última coleta boa."
+)
 
 STEPS: tuple[tuple[str, str], ...] = (
     ("yahoo", "Yahoo"),
