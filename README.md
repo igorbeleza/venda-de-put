@@ -6,7 +6,8 @@ Branch de integração: **`main`** (este dashboard Python). Zips locais (fora do
 
 ```
 python -m pip install -e ".[dev]"
-cp .env.example .env   # preencha VENDA_DE_PUT_ADMIN_PASSWORD e VENDA_DE_PUT_SECRET_KEY p/ login de admin
+cp .env.example .env   # admin: VENDA_DE_PUT_ADMIN_PASSWORD e VENDA_DE_PUT_SECRET_KEY
+                       # opcional: VENDA_DE_PUT_BRAPI_TOKEN (à vista se o Yahoo falhar 3 vezes no ticker)
 python -m venda_de_put scrape
 python -m venda_de_put serve --host 127.0.0.1 --port 8765
 python -m pytest

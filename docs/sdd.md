@@ -7,7 +7,7 @@ Desenho do sistema Python neste repositório. Autoridade de arquitetura. Glossá
 Processo único FastAPI + uvicorn, só `127.0.0.1`. Estado de mercado = um snapshot JSON no disco (`data/snapshots/current.json`). Sem banco.
 
 ```
-Yahoo ──┐
+Yahoo ──┐  (+ brapi à vista / Cotahist se Yahoo perde ticker)
 OpLab ──┼─ scrape ─► snapshot ─► GET /api/* ─► app.js
 Fund. ──┘              ▲
                        └── POST /api/refresh só relê
@@ -78,6 +78,8 @@ Detalhe numérico: o código e os testes. Paridade Excel dos ranks: fixtures em 
 
 Trocar o vencimento não vai à rede e não reordena listas. Resposta traz `premio_alvo`, `strike`, `premio_bid` (valor do último), `premio_bid_pct`, `option_symbol`, `strike_status`.
 
+`GET /api/dashboard` inclui `price_notice` (null ou a frase de `PRICE_NOTICE`) quando a consulta ao vivo falhou. `GET /api/ativos` e `GET /api/dados` devolvem também o carimbo do Yahoo (`carimbo`) e o `generated_at`; as duas abas pintam o mesmo banner de coleta das listas. O à vista da aba Ativos é o `preco` da última raspagem (Yahoo, ou brapi/Cotahist no fallback) — é dele que saem indicadores, strike e prêmio. A cotação mostrada na aba Dados é a do Fundamentus, outro número de propósito.
+
 Instruções: `GET /api/instrucoes` lê `web/instrucoes.md`. Testes recusam certas palavras de terminal nesse texto.
 
 HTML e JS usam caminhos relativos (`static/…`, `fetch("api/…")`), não `/static` nem `/api`. Assim o dashboard funciona na raiz local e atrás de um prefixo no proxy (`X-Forwarded-Prefix`). O seletor de vencimento é um combo da UI (fonte e scroll do tema); o `<select id="vencimento">` fica no DOM só para o valor.
@@ -106,6 +108,7 @@ Windows: duplo-clique `iniciar-dashboard.bat` (porta 8765, ou aleatória via
 `scripts/pick_port.py` se estiver ocupada) — sobe e abre o navegador sozinho.
 
 `VENDA_DE_PUT_DATA` sobrescreve o diretório `data/`. `VENDA_DE_PUT_ADMIN_PASSWORD`
-e `VENDA_DE_PUT_SECRET_KEY` (login de admin, ADR 0004) vêm de `.env` na raiz
-(copie `.env.example`) — `paths.load_dotenv` carrega sozinho, sem exportar
-na mão.
+e `VENDA_DE_PUT_SECRET_KEY` (login de admin, ADR 0004) e
+`VENDA_DE_PUT_BRAPI_TOKEN` (fallback de à vista; sem ele a brapi não chama a rede)
+vêm de `.env` na raiz (copie `.env.example`) — `paths.load_dotenv` carrega
+sozinho, sem exportar na mão.

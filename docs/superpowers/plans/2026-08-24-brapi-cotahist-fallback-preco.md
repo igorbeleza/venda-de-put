@@ -16,7 +16,8 @@
 - Token: `VENDA_DE_PUT_BRAPI_TOKEN` no `.env` via `paths.load_dotenv`. Sem token → brapi não faz GET. Sem campo na Config.
 - Yahoo: **3** tentativas por ticker (`range(3)`). Pausa 150–250 ms só entre tickers.
 - Brapi: `GET https://brapi.dev/api/v2/stocks/quote?symbols=T1,T2,…` com `Authorization: Bearer`. Nunca `?token=` na URL. Símbolos sem `.SA`. Sem retry extra.
-- Cotahist URL: `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{YYYY}.ZIP`. Layout 1-indexado 245 chars: `TIPREG` 1–2=`01`, `DATA` 3–10, `CODBDI` 11–12=`02`, `CODNEG` 13–24, `TPMERC` 25–27=`010`, `PREULT` 109–121 ÷ 100.
+- Cotahist URL: `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{YYYY}.ZIP`. Layout 1-indexado 245 chars: `TIPREG` 1–2=`01`, `DATA` 3–10, `CODBDI` 11–12=`02`, `CODNEG` 13–24, `TPMERC` 25–27=`010`, `PREULT` 109–121 ÷ 100. Timeout **60s** no ZIP (as outras fontes: 30s). Validar ZIP antes de gravar no cache; ZIP ruim num ano não descarta o outro.
+- Ticker **frio** = Yahoo não trouxe série **e** não há técnico anterior **aproveitável**: `technicals` ausente/`None`, ou `preco` e `mm200` ambos `None`. O `TechnicalInput` de oito nulos que `run_scrape` grava em “sem dado” **é frio** — senão o Cotahist nunca dispara na segunda raspagem.
 - Passo de progresso continua `yahoo`. Sem passo extra na barra.
 - `app.py` não importa `scrape.py`, `sources.brapi` nem `sources.cotahist`.
 - Snapshot **não** persiste série de fechamentos. Overlay: indicadores do técnico anterior + `preco` brapi (ou o velho).
@@ -43,7 +44,8 @@
 | `src/venda_de_put/web/static/app.css` | Estilo da faixa |
 | `.env.example` | Documenta o token |
 | `.gitignore` | `data/cotahist/` |
-| `docs/sdd.md` | Tabela de módulos |
+| `docs/sdd.md` | Tabela de módulos + apagar “Planejado (não implementado)” |
+| `AGENTS.md` | Linha do fallback: deixa de dizer “ainda sem código” |
 
 ---
 
@@ -217,7 +219,7 @@ def test_brapi_lote_so_os_pedidos():
     seen = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen["url"] = str(request.url)
+        seen["request"] = request
         seen["auth"] = request.headers.get("authorization")
         assert "token=" not in str(request.url)
         return httpx.Response(200, json={
@@ -227,9 +229,10 @@ def test_brapi_lote_so_os_pedidos():
     client = httpx.Client(transport=httpx.MockTransport(handler))
     out = BrapiSpotHttp(token="abc", client=client).fetch_spots(["PETR4", "VALE3"])
     assert out == {"PETR4": 10.0}
-    assert "symbols=PETR4,VALE3" in seen["url"]
+    # httpx percent-encoda a vírgula (PETR4%2CVALE3). Assertar o valor decodificado.
+    assert seen["request"].url.params["symbols"] == "PETR4,VALE3"
     assert seen["auth"] == "Bearer abc"
-    assert seen["url"].startswith(BRAPI_QUOTE)
+    assert str(seen["request"].url).startswith(BRAPI_QUOTE)
 
 
 def test_brapi_http_erro_devolve_vazio():
@@ -375,6 +378,7 @@ git commit -m "feat: brapi.dev como fonte de a vista em lote"
   - `class CotahistBootstrap:`
     - `__init__(self, cache_dir: Path, client: httpx.Client | None = None, now: datetime | None = None)`
     - `fetch_history(self, tickers: list[str]) -> dict[str, CandleSeries]`
+  - Timeout 60s no GET do ZIP. `zipfile.is_zipfile` antes de gravar no cache; `_read_zip` try/except por ano.
   - `CandleSeries.timestamps: list[Optional[int]]` (default `[]`; construtores posicionais de 6 args continuam válidos)
 
 - [ ] **Step 1: Write the failing tests**
@@ -510,6 +514,38 @@ def test_cotahist_get_404_sem_cache_omite(tmp_path: Path):
     client = httpx.Client(transport=httpx.MockTransport(handler))
     out = CotahistBootstrap(tmp_path, client=client, now=now).fetch_history(["PETR4"])
     assert out == {}
+
+
+def test_cotahist_200_invalido_nao_envenena_cache(tmp_path: Path):
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
+    p2025 = tmp_path / "COTAHIST_A2025.ZIP"
+    p2026 = tmp_path / "COTAHIST_A2026.ZIP"
+    p2025.write_bytes(_zip_bytes(2025, _line("20250815", "PETR4", 30.0) + "\n"))
+    p2026.write_bytes(_zip_bytes(2026, _line("20260814", "PETR4", 40.0) + "\n"))
+    os.utime(p2026, (time.time() - 86400 - 5, time.time() - 86400 - 5))
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"<html>erro da B3</html>")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    out = CotahistBootstrap(tmp_path, client=client, now=now).fetch_history(["PETR4"])
+    assert out["PETR4"].preco == 40.0
+    assert zipfile.is_zipfile(p2026)
+
+
+def test_cotahist_zip_corrupto_num_ano_nao_descarta_o_outro(tmp_path: Path):
+    now = datetime(2026, 8, 15, 16, 0, tzinfo=TZ)
+    p2025 = tmp_path / "COTAHIST_A2025.ZIP"
+    p2026 = tmp_path / "COTAHIST_A2026.ZIP"
+    p2025.write_bytes(_zip_bytes(2025, _line("20250815", "PETR4", 30.0) + "\n"))
+    p2026.write_bytes(b"not a zip")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    out = CotahistBootstrap(tmp_path, client=client, now=now).fetch_history(["PETR4"])
+    assert out["PETR4"].preco == 30.0
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -612,8 +648,12 @@ class CotahistBootstrap:
         texts: list[str] = []
         for y in (year - 1, year):
             raw = self._zip_bytes(y)
-            if raw:
+            if not raw:
+                continue
+            try:
                 texts.append(self._read_zip(raw))
+            except Exception:
+                continue
         merged: dict[str, list[tuple[date, float]]] = {}
         for text in texts:
             part = parse_cotahist_text(text, tickers)
@@ -652,6 +692,10 @@ class CotahistBootstrap:
         try:
             resp = client.get(url, headers={"User-Agent": USER_AGENT})
             resp.raise_for_status()
+            if not zipfile.is_zipfile(io.BytesIO(resp.content)):
+                if path.is_file():
+                    return path.read_bytes()
+                return None
             self._cache.mkdir(parents=True, exist_ok=True)
             path.write_bytes(resp.content)
             return resp.content
@@ -664,9 +708,13 @@ class CotahistBootstrap:
                 client.close()
 
     def _read_zip(self, raw: bytes) -> str:
+        if not zipfile.is_zipfile(io.BytesIO(raw)):
+            raise zipfile.BadZipFile("not a zip")
         with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-            name = zf.namelist()[0]
-            data = zf.read(name)
+            names = zf.namelist()
+            if not names:
+                raise zipfile.BadZipFile("empty zip")
+            data = zf.read(names[0])
         try:
             return data.decode("latin-1")
         except Exception:
@@ -757,15 +805,157 @@ class BoomPrice:
         raise RuntimeError("yahoo down")
 ```
 
-Testes (todos neste step):
+Testes (todos neste step). `FakePrice` / `_petr_inputs` já existem no arquivo.
 
-1. `test_yahoo_cobre_todos_nao_chama_spot_nem_history` — Yahoo ok em PETR4; `FakeSpot`/`FakeHistory` com `calls == []`; stamp `ok`; `error is None`.
-2. `test_yahoo_perde_com_tecnico_anterior_brapi_atualiza_preco` — first scrape cheio; second `FakePrice({})` + `FakeSpot({"PETR4": 50.0})`; `preco == 50.0`; `mm200` igual ao first; stamp `ok`; `spot.calls[0] == ["PETR4"]`; history não chamado (ticker não é frio).
-3. `test_yahoo_perde_brapi_vazio_reusa_tudo_e_avisa` — empty price, `FakeSpot({})`; `preco` velho; stamp `ok is False`; `stamp.error == PRICE_NOTICE`; `stale is True`. Atualizar `test_empty_yahoo_fetch_stamps_failed_and_reuses_previous` para `assert stamp.error == PRICE_NOTICE` (o empty atual não passa `spot`; `spot=None` também avisa, porque ninguém é vivo).
-4. `test_sem_anterior_cotahist_mais_spot_calcula_na_serie` — `previous=None`, `FakePrice({})`, history com `closes=[30.0]*210` e timestamps de ontem, spot `41.75`; `preco == 41.75`; `mm200 is not None`; stamp `ok`; `history.calls[0] == ["PETR4"]`.
-5. `test_sem_anterior_cotahist_falha_sem_spot_sem_dado` — `previous=None`, empty price, empty spot, empty history; `technicals.preco is None`; stamp falhou com `PRICE_NOTICE`.
-6. `test_price_fetch_excecao_ainda_chama_brapi` — `BoomPrice` + `FakeSpot({"PETR4": 50.0})` + previous first; `spot.calls`; `preco == 50.0`; stamp `ok`.
-7. `test_dois_de_tres_yahoo_sem_brapi_avisa` — universo 3 tickers, second scrape só PETR4 no FakePrice, sem spot; stamp `ok is False` (a regra da metade saiu: 2/3 sem brapi **também** avisaria se fossem 2; aqui 1/3 já avisava — este teste usa 2 de 3 no Yahoo **sem** spot para cravar a regra nova):
+```python
+def _serie_ontem(ticker: str, now: datetime, preco: float = 40.0) -> CandleSeries:
+    yesterday = int(datetime(2026, 8, 14, 18, 0, tzinfo=TZ).timestamp())
+    return CandleSeries(
+        ticker=ticker,
+        closes=[30.0] * 210,
+        preco=preco,
+        max_52=45.0,
+        min_52=20.0,
+        collected_at=now,
+        timestamps=[yesterday] * 210,
+    )
+
+
+def test_yahoo_cobre_todos_nao_chama_spot_nem_history():
+    price, iv, fund, universe, now = _petr_inputs()
+    spot = FakeSpot({"PETR4": 99.0})
+    hist = FakeHistory({})
+    snap = run_scrape(
+        price, iv, fund, AppConfig(), universe, set(), now,
+        spot=spot, history=hist,
+    )
+    assert spot.calls == []
+    assert hist.calls == []
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert stamp.error is None
+
+
+def test_yahoo_perde_com_tecnico_anterior_brapi_atualiza_preco():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    spot = FakeSpot({"PETR4": 50.0})
+    hist = FakeHistory({})
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=spot, history=hist,
+    )
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 50.0
+    assert petr.technicals.mm200 == petr_first.technicals.mm200
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert spot.calls[0] == ["PETR4"]
+    assert hist.calls == []
+
+
+def test_yahoo_perde_brapi_vazio_reusa_tudo_e_avisa():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=FakeSpot({}),
+    )
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == petr_first.technicals.preco
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+    assert stamp.stale is True
+
+
+def test_sem_anterior_cotahist_mais_spot_calcula_na_serie():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now)})
+    spot = FakeSpot({"PETR4": 41.75})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=spot, history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 41.75
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert hist.calls[0] == ["PETR4"]
+
+
+def test_sem_anterior_cotahist_falha_sem_spot_sem_dado():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco is None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+
+
+def test_price_fetch_excecao_ainda_chama_brapi():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(price, iv, fund, AppConfig(), universe, set(), now)
+    spot = FakeSpot({"PETR4": 50.0})
+    second = run_scrape(
+        BoomPrice(), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=spot,
+    )
+    assert spot.calls
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 50.0
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+
+
+def test_sem_anterior_cotahist_sem_spot_avisa():
+    price, iv, fund, universe, now = _petr_inputs()
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now, preco=40.0)})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 40.0
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+    assert hist.calls[0] == ["PETR4"]
+
+
+def test_snapshot_sem_dado_ainda_e_frio_na_proxima():
+    price, iv, fund, universe, now = _petr_inputs()
+    first = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=FakeSpot({}), history=FakeHistory({}),
+    )
+    petr_first = next(a for a in first.assets if a.ticker == "PETR4")
+    assert petr_first.technicals.preco is None
+    assert petr_first.technicals.mm200 is None
+    hist = FakeHistory({"PETR4": _serie_ontem("PETR4", now, preco=40.0)})
+    second = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=first, spot=FakeSpot({}), history=hist,
+    )
+    assert hist.calls == [["PETR4"]]
+    petr = next(a for a in second.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 40.0
+    assert petr.technicals.mm200 is not None
+    stamp = next(s for s in second.stamps if s.source == "yahoo")
+    assert stamp.ok is False
+    assert stamp.error == PRICE_NOTICE
+```
+
+7. `test_dois_de_tres_yahoo_sem_brapi_avisa` — universo 3 tickers, second scrape só PETR4+VALE3 no FakePrice, sem spot; stamp `ok is False` (a regra da metade saiu):
 
 ```python
 def test_dois_de_tres_yahoo_sem_brapi_avisa():
@@ -846,6 +1036,15 @@ Expected: FAIL — `run_scrape` não aceita `spot=` / `history=`; 2 de 3 Yahoo h
 - Import: `apply_spot_as_last_period` junto dos outros indicators
 - Import: `SpotSource, HistoryBootstrap` em `sources.types`
 - Import: `PRICE_NOTICE` de `scrape_progress`
+- Antes de `run_scrape`, helper de ticker frio (B2 — `TechnicalInput` de nulos é truthy):
+
+```python
+def _tecnico_aproveitavel(tech: TechnicalInput | None) -> bool:
+    return tech is not None and (
+        tech.preco is not None or tech.mm200 is not None
+    )
+```
+
 - Assinatura de `run_scrape`: depois de `only_steps`,
 
 ```python
@@ -875,9 +1074,12 @@ Substituir o bloco yahoo (o `if wanted is None or "yahoo" in wanted`) por:
         prev_tech_early = {}
         if previous is not None:
             prev_tech_early = {
-                a.ticker: a.technicals for a in previous.assets if a.technicals
+                a.ticker: a.technicals for a in previous.assets
             }
-        frios = [t for t in faltou if prev_tech_early.get(t) is None]
+        frios = [
+            t for t in faltou
+            if not _tecnico_aproveitavel(prev_tech_early.get(t))
+        ]
         if frios and history is not None:
             try:
                 hist = dict(history.fetch_history(frios))
@@ -945,7 +1147,7 @@ git commit -m "feat: scrape encadeia brapi e Cotahist no passo de preco"
 
 **Interfaces:**
 - Consumes: `BrapiSpotHttp`, `CotahistBootstrap`, `os.environ`, `resolve_data_dir`
-- Produces: `cli_scrape` passa `spot=BrapiSpotHttp()` e `history=CotahistBootstrap(root / "cotahist")` para `run_scrape`. Token lido dentro de `BrapiSpotHttp` (env já carregada por `load_dotenv` no processo).
+- Produces: `cli_scrape` passa `spot=BrapiSpotHttp()` e `history=CotahistBootstrap(root / "cotahist")` para `run_scrape`. Token lido dentro de `BrapiSpotHttp` (env já carregada por `load_dotenv` no processo). A local hoje chamada `history = snapshot_history(root)` **renomeia para** `history_dir` — senão um `history = CotahistBootstrap(...)` local pisa o diretório e `write_snapshot` recebe a fonte no lugar da pasta.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -956,6 +1158,10 @@ def test_cli_scrape_instancia_brapi_e_cotahist():
     assert "CotahistBootstrap" in src
     assert "spot=BrapiSpotHttp()" in src
     assert "CotahistBootstrap(root / \"cotahist\"" in src
+    assert "history=CotahistBootstrap" in src
+    assert "history_dir = snapshot_history(root)" in src
+    assert "write_snapshot(snap, current, history_dir" in src
+    assert "history = snapshot_history(root)" not in src
 
 
 def test_env_example_documenta_brapi_token():
@@ -971,14 +1177,29 @@ Expected: FAIL — `BrapiSpotHttp` ainda não aparece em `cli_scrape`; `.env.exa
 
 - [ ] **Step 3: Write minimal implementation**
 
-Em `cli_scrape`, junto dos imports de Yahoo/OpLab:
+Em `cli_scrape`:
+
+- Junto dos imports de Yahoo/OpLab:
 
 ```python
     from venda_de_put.sources.brapi import BrapiSpotHttp
     from venda_de_put.sources.cotahist import CotahistBootstrap
 ```
 
-Na chamada `run_scrape(...)`, acrescentar:
+- Renomear a local do diretório de histórico (hoje `history = snapshot_history(root)`):
+
+```python
+    current = snapshot_current(root)
+    history_dir = snapshot_history(root)
+```
+
+e a escrita:
+
+```python
+    write_snapshot(snap, current, history_dir, archive_if_1600=True)
+```
+
+- Na chamada `run_scrape(...)`, acrescentar o kwarg (não criar local `history = CotahistBootstrap(...)`):
 
 ```python
         spot=BrapiSpotHttp(),
@@ -1160,14 +1381,15 @@ git commit -m "feat: aviso de consulta de preco no dashboard e na API"
 
 ---
 
-### Task 7: `docs/sdd.md` e pytest completo
+### Task 7: `docs/sdd.md`, `AGENTS.md` e pytest completo
 
 **Files:**
-- Modify: `docs/sdd.md` (tabela de módulos + diagrama de coleta)
+- Modify: `docs/sdd.md` (tabela de módulos + diagrama de coleta + apagar “Planejado (não implementado)”)
+- Modify: `AGENTS.md` (linha do fallback, hoje “ainda sem código”)
 
 **Interfaces:**
 - Consumes: módulos já criados nas tasks 1–6
-- Produces: SDD alinhado à spec
+- Produces: SDD e AGENTS alinhados à spec; nenhuma frase afirmando que brapi/Cotahist não existem no código
 
 - [ ] **Step 1: Write the failing check**
 
@@ -1194,9 +1416,23 @@ Fund. ────────────────────────�
 
 Ou, mais simples, manter o diagrama de três fontes e na seção Coleta acrescentar:
 
-- Preço: Yahoo (3 tentativas/ticker). Ticker faltoso → brapi.dev à vista (`VENDA_DE_PUT_BRAPI_TOKEN`). Sem técnico anterior → Cotahist `COTAHIST_A{ano}` em `data/cotahist/`. Consulta ao vivo falhou → carimbo yahoo `ok=false` com `PRICE_NOTICE`; Dashboard mostra `price_notice`.
+- Preço: Yahoo (3 tentativas/ticker). Ticker faltoso → brapi.dev à vista (`VENDA_DE_PUT_BRAPI_TOKEN`). Sem técnico anterior aproveitável (`preco`/`mm200`) → Cotahist `COTAHIST_A{ano}` em `data/cotahist/`. Consulta ao vivo falhou → carimbo yahoo `ok=false` com `PRICE_NOTICE`; Dashboard mostra `price_notice`.
 
 Armadilhas de fonte: brapi sem token não chama rede; Cotahist não ajusta desdobro; cache do ano corrente revalida após 1 dia.
+
+**Apagar** a seção `## Planejado (não implementado)` e o parágrafo que começa em “Nada disso existe no código hoje” (`docs/sdd.md` ~93–95). O comportamento passa a viver na Coleta; deixar essa seção de pé vira mentira.
+
+Em `AGENTS.md`, substituir a linha:
+
+```
+- **Fallback de preço brapi/Cotahist** → desenhado, ainda sem código: `docs/superpowers/specs/2026-08-24-brapi-cotahist-fallback-preco-design.md`.
+```
+
+por:
+
+```
+- **Fallback de preço brapi/Cotahist** → `docs/superpowers/specs/2026-08-24-brapi-cotahist-fallback-preco-design.md`; código em `sources/brapi.py`, `sources/cotahist.py`, encadeado em `scrape.py`.
+```
 
 - [ ] **Step 3: Run the full suite**
 
@@ -1207,7 +1443,7 @@ Expected: PASS (100% dos testes do repo).
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/sdd.md
+git add docs/sdd.md AGENTS.md
 git commit -m "docs: brapi e Cotahist na tabela de fontes do SDD"
 ```
 
@@ -1219,19 +1455,22 @@ git commit -m "docs: brapi e Cotahist na tabela de fontes do SDD"
 |---|---|
 | Yahoo 3 tentativas/ticker | 1 |
 | Brapi só à vista, lote, Bearer, sem token = zero GET | 2 |
-| Cotahist bootstrap, cache, offsets, URL B3 | 3 |
+| Cotahist bootstrap, cache, offsets, URL B3, ZIP válido | 3 |
+| Ticker frio = técnico não aproveitável (`preco`/`mm200`); 2ª raspagem “sem dado” ainda é frio | 4 (`_tecnico_aproveitavel` + `test_snapshot_sem_dado_ainda_e_frio_na_proxima`) |
 | `timestamps` para último período | 3 + 4 |
 | Encadeamento scrape, `yahoo_ok` vs Cotahist, overlay `preco` | 4 |
+| Cotahist sozinho (sem spot) monta série e acende aviso | 4 (`test_sem_anterior_cotahist_sem_spot_avisa`) |
 | Exceção Yahoo ainda chama fallback | 4 |
 | Regra da metade sai; aviso se algum ticker não-vivo | 4 |
 | `PRICE_NOTICE` no carimbo | 4 |
-| CLI instancia as duas fontes | 5 |
+| CLI instancia as duas fontes; local `history` → `history_dir` | 5 |
 | `.env.example` | 5 |
 | `gitignore data/cotahist/` | 3 |
 | `GET /api/dashboard` `price_notice` | 6 |
 | Faixa acima das listas, não toast, independente de `dado velho` | 6 |
 | Config passo `falhou` via carimbo/`passos_from_stamps` | 4 + 6 (já pintava `erro`) |
 | `app.py` sem scrape/brapi/cotahist | 6 |
-| SDD | 7 |
+| SDD + apagar “Planejado (não implementado)” | 7 |
+| `AGENTS.md` deixa de dizer “ainda sem código” | 7 |
 | Sem persistir série; sem passo extra; sem token na UI | fora / não criar |
 | Smoke ao vivo inalterado | nenhum task mexe em `smoke.py` |

@@ -1,5 +1,7 @@
 # Fallback de preço: brapi.dev + Cotahist
 
+Implementado. Yahoo (3 tentativas) → brapi à vista → Cotahist nos tickers frios; aviso `PRICE_NOTICE` no Dashboard quando a consulta ao vivo falhou.
+
 Data: 2026-08-24
 
 Yahoo continua a fonte principal de preço. Se falhar **3 vezes seguidas no mesmo ticker, na mesma raspagem**, o scrape busca o à vista na brapi.dev. Sem técnico anterior no snapshot, o histórico de ~2 anos vem dos ZIPs anuais Cotahist da B3 (download e cache automáticos). Scoring, strike, OpLab e Fundamentus não mudam.
@@ -16,10 +18,10 @@ Consulta de preço não pode depender só do Yahoo. Fallback pontual, por ticker
 |---|---|
 | Gatilho | Por ticker, 3 tentativas Yahoo; depois brapi naquele papel. Os outros seguem no Yahoo. |
 | Brapi | Só o à vista (`regularMarketPrice`). Sem série. |
-| Histórico | Snapshot **não** guarda fechamentos. Com técnico anterior, reusa MM200/IFR/Boll/HV. |
-| Bootstrap | Sem técnico anterior: Cotahist monta a série (anos corrente + anterior). |
+| Histórico | Snapshot **não** guarda fechamentos. Com técnico anterior **aproveitável**, reusa MM200/IFR/Boll/HV. |
+| Bootstrap | Sem técnico anterior aproveitável: Cotahist monta a série (anos corrente + anterior). |
 | Token | `VENDA_DE_PUT_BRAPI_TOKEN` no `.env`. Sem token, brapi não chama a rede. Sem campo na Config. |
-| Sem brapi | Tem técnico anterior → reusa o pacote inteiro (preço velho incluso). Sem anterior → Cotahist série + último fechamento como `preco`. |
+| Sem brapi | Tem técnico aproveitável → reusa o pacote inteiro (preço velho incluso). Sem aproveitável → Cotahist série + último fechamento como `preco`. |
 | Aviso | Passo Config `yahoo` = `falhou` **e** faixa no Dashboard (aba das listas). |
 | Fallback ok | Brapi cobriu os que o Yahoo perdeu → passo `ok`, sem faixa, sem “usou brapi” na UI. |
 | Arquitetura | Três módulos; `run_scrape` encadeia. Não um `PriceSource` composto. |
@@ -68,7 +70,7 @@ class HistoryBootstrap(Protocol):
 
 ### CotahistBootstrap
 
-`src/venda_de_put/sources/cotahist.py`. Só corre se existir ticker **frio**: Yahoo não trouxe série **e** o snapshot anterior não tem esse ticker em `assets`, ou `technicals` é `None`.
+`src/venda_de_put/sources/cotahist.py`. Só corre se existir ticker **frio**: Yahoo não trouxe série **e** o snapshot anterior não tem técnico **aproveitável** nesse ticker. Aproveitável = `technicals` presente com `preco` **ou** `mm200` não-nulo. Ausente em `assets`, `technicals is None`, ou os dois campos nulos (o `TechnicalInput` de oito nulos que `run_scrape` grava em “sem dado”) **é frio**. Sem isso o bootstrap Cotahist nunca dispara na segunda raspagem.
 
 - Anos: corrente e anterior (`America/Sao_Paulo` em `now`).
 - URL: `https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A{YYYY}.ZIP`
@@ -77,7 +79,8 @@ class HistoryBootstrap(Protocol):
 - Parser (fixture, não B3 ao vivo). Layout fixo 1-indexado, registro de 245 chars. Usar só: `TIPREG` 1–2 = `01`, `DATA` 3–10 (`YYYYMMDD`), `CODBDI` 11–12 = `02` (lote padrão), `CODNEG` 13–24 strip, `TPMERC` 25–27 = `010` (vista), `PREULT` 109–121 (÷ 100). Ignorar o resto da linha. Ordenar por data. Dia sem negócio = ausente na lista (não inventar `null`). `PREULT` inválido = pular a linha.
 - `preco` da série = último fechamento. `max_52` / `min_52` = máx/mín dos fechamentos da série (ou `None` se vazia). Timestamps Unix em `America/Sao_Paulo` para `apply_spot_as_last_period`.
 - Cotahist é **não ajustado** (desdobro/provento). Yahoo costuma ser ajustado. Aceito no bootstrap; a próxima Yahoo boa substitui a série.
-- `httpx.Client` injetável. Download é o ZIP binário.
+- `httpx.Client` injetável. Download é o ZIP binário; timeout **60s** (ZIP anual). As outras fontes continuam em 30s.
+- Validar o conteúdo **antes** de gravar no cache (`zipfile.is_zipfile`). HTTP 200 que não é ZIP não sobrescreve o arquivo bom. `_read_zip` com try/except **por ano**: ZIP corrupto / TXT ausente / ZIP vazio descarta só aquele ano; o outro segue.
 
 ### Snapshot, API, UI
 
@@ -102,10 +105,10 @@ Uma raspagem (ciclo inteiro ou `--from-step yahoo`, que continua puxando os quat
 
 1. `YahooHttp.fetch(universo)`. Guardar `yahoo_ok = set(series)`. Exceção → `series = {}`, `yahoo_ok = set()` e **mesmo assim** segue o fallback (não abortar brapi/Cotahist).
 2. `faltou = universo − yahoo_ok`. Se `faltou` e `spot` não é `None`, `spots = spot.fetch_spots(faltou)`.
-3. `frios = [t em faltou sem técnico anterior]`. Se `frios` e `history` não é `None`, `hist = history.fetch_history(frios)`. Em cada série de `hist` que tiver spot brapi, aplicar `apply_spot_as_last_period`. Depois `series.update(hist)` (todas as séries Cotahist, com ou sem spot). **Não** misturar Cotahist em `yahoo_ok`.
+3. `frios = [t em faltou sem técnico anterior aproveitável]`. Se `frios` e `history` não é `None`, `hist = history.fetch_history(frios)`. Em cada série de `hist` que tiver spot brapi, aplicar `apply_spot_as_last_period`. Depois `series.update(hist)` (todas as séries Cotahist, com ou sem spot). **Não** misturar Cotahist em `yahoo_ok`.
 4. Técnico por ticker:
    1. Tem série (Yahoo ou Cotahist) → MM200, IFR, Boll Inf, HV e `preco` nessa série, como hoje.
-   2. Senão tem técnico anterior → reusa MM200/IFR/Boll/HV (e IV como já); `preco` = spot brapi se houver, senão o `preco` velho.
+   2. Senão tem técnico anterior aproveitável → reusa MM200/IFR/Boll/HV (e IV como já); `preco` = spot brapi se houver, senão o `preco` velho.
    3. Senão → tudo `None` (“sem dado”).
 5. OpLab / Fundamentus / cadeia inalterados.
 
@@ -127,11 +130,11 @@ Retry de passo, `retry_completo` (> 1 h) e “fonte morta não zera número” p
 | Ticker ausente em `results` | Sem spot naquele papel. |
 | Cotahist GET falha, sem ZIP em cache | `frios` sem série. |
 | Cotahist GET falha, ZIP velho existe | Usa o velho. |
-| ZIP corrupto / TXT ausente | `frios` sem série. |
+| ZIP corrupto / 200 que não é ZIP / TXT ausente | Não grava no cache (não envenena o ZIP bom). Aquele **ano** sem série; o outro ano segue. |
 | Ticker não aparece no Cotahist | Sem série naquele papel. |
 | Universo vazio | Passo falha (`no tickers`), como a guarda atual. |
 
-Dashboard nunca inventa `0`. “sem dado” só sem série nova **e** sem técnico anterior. `stale=true` no carimbo yahoo quando o aviso acende.
+Dashboard nunca inventa `0`. “sem dado” só sem série nova **e** sem técnico anterior aproveitável. `stale=true` no carimbo yahoo quando o aviso acende.
 
 ## Fora de escopo
 
@@ -150,12 +153,14 @@ Fixtures e `httpx.Client` (ou fake `SpotSource` / `HistoryBootstrap`) injetados.
 
 - Yahoo: falha, falha, sucesso → série; três falhas → ticker omitido.
 - Brapi: parse de `regularMarketPrice`; sem token → zero GET; lote pede só `faltou`.
-- Cotahist: fixture com vista vs opção, `PREULT`, ticker frio vs com técnico anterior; cache hit não baixa; cache do ano corrente com `mtime` > 1 dia dispara GET; GET falho reusa ZIP; `fetch_history` só recebe `frios`.
+- Cotahist: fixture com vista vs opção, `PREULT`, ticker frio vs com técnico anterior aproveitável; cache hit não baixa; cache do ano corrente com `mtime` > 1 dia dispara GET; GET falho reusa ZIP; HTTP 200 que não é ZIP não sobrescreve o cache; ZIP corrupto num ano não descarta o outro; `fetch_history` só recebe `frios`.
 - Scrape: Yahoo cobre todos → `spot`/`history` não chamados, sem aviso.
-- Scrape: Yahoo perde um ticker **com** técnico anterior + spot brapi → indicadores velhos, `preco` novo, passo `ok`, `price_notice` null.
-- Scrape: Yahoo perde, brapi vazio, há anterior → reusa tudo, carimbo `ok=False`, frase no `error`, `stale=True`.
+- Scrape: Yahoo perde um ticker **com** técnico anterior aproveitável + spot brapi → indicadores velhos, `preco` novo, passo `ok`, `price_notice` null.
+- Scrape: Yahoo perde, brapi vazio, há anterior aproveitável → reusa tudo, carimbo `ok=False`, frase no `error`, `stale=True`.
 - Scrape: sem anterior, Cotahist série + spot brapi → indicadores na série Cotahist, último período = spot, passo `ok`.
+- Scrape: sem anterior, Cotahist série **sem** spot → indicadores na série, `preco` = último fechamento Cotahist, aviso aceso (Cotahist sozinho não é vivo).
 - Scrape: sem anterior, Cotahist falha, sem spot → “sem dado”, aviso aceso.
+- Scrape: snapshot “sem dado” (técnico de nulos) + Yahoo falho + Cotahist ok → ticker **ainda é frio**; `fetch_history` é chamado; série montada; aviso aceso.
 - Scrape: `price.fetch` levanta exceção → ainda chama brapi/Cotahist nos tickers.
 - API/UI: `price_notice` no `GET /api/dashboard` quando carimbo yahoo falhou; faixa no HTML/JS acima das listas; passo Config `falhou` com a frase. Sem notice → faixa `hidden`.
 - Guarda: `app.py` não importa `scrape.py` nem `brapi`/`cotahist`.

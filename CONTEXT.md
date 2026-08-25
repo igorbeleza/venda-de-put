@@ -114,6 +114,14 @@ _Avoid_: IV calculada aqui
 JSON em disco com ativos, listas, fundamentos, cadeias e carimbos das fontes. O dashboard só lê isso. Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
 _Avoid_: banco, cache em memória como fonte; tratar o carimbo como pregão ao vivo
 
+**Preço da raspagem**:
+À vista (`preco`) da última coleta. Fonte principal: série Yahoo. Se o Yahoo perde o ticker (3 tentativas), o à vista vem da brapi.dev; sem técnico anterior aproveitável, a série vem dos ZIPs Cotahist da B3. Alimenta indicadores, strike e prêmio; é o número que Dashboard e Ativos mostram. A aba Dados exibe a cotação do Fundamentus — outro número.
+_Avoid_: pregão ao vivo; trocar pela cotação do Fundamentus; tratar Cotahist sozinho como cotação ao vivo
+
+**Aviso de consulta de preço**:
+Faixa no Dashboard (e passo Config `yahoo` = falhou) com a frase `A consulta de preço falhou; os dados na tela podem ser os da última coleta boa.` Acende quando algum ticker do universo não teve à vista vivo (Yahoo ou brapi) nesta coleta. Cotahist sozinho não apaga o aviso.
+_Avoid_: acender porque o fallback da brapi cobriu o ticker; misturar com “dado velho” do Fundamentus
+
 **Cadeia**:
 Puts enxutas por ticker (vencimento, strike, bid, ask, último, símbolo, delta, poe, volume).
 _Avoid_: JSON cru do OpLab

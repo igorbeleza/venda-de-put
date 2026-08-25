@@ -22,7 +22,7 @@ No vencimento escolhido, o prêmio da put é **último preço negociado / strike
 
 ## Dados
 
-Os dados vêm do snapshot em disco (Yahoo, OpLab, Fundamentus), relido no botão Atualizar — sem terminal de corretora.
+Os dados vêm do snapshot em disco (Yahoo, OpLab, Fundamentus), relido no botão Atualizar — sem terminal de corretora. Se a consulta de preço falhar, o Dashboard avisa; os números podem ser da última coleta boa.
 
 As **cotações** (preço à vista e o que dele deriva: indicadores, strike, prêmio) estão **cerca de 15 minutos atrasadas** em relação ao horário da raspagem. O carimbo “Atualizado em …” é o instante da coleta, não o instante do pregão.
 
