@@ -315,6 +315,25 @@ def test_sem_anterior_cotahist_falha_sem_spot_sem_dado():
     assert stamp.ok is False
     assert stamp.error == PRICE_NOTICE
 
+def test_sem_anterior_sem_cotahist_brapi_preenche_preco_sem_indicadores():
+    price, iv, fund, universe, now = _petr_inputs()
+    spot = FakeSpot({"PETR4": 50.0})
+    hist = FakeHistory({})
+    snap = run_scrape(
+        FakePrice({}), iv, fund, AppConfig(), universe, set(), now,
+        previous=None, spot=spot, history=hist,
+    )
+    petr = next(a for a in snap.assets if a.ticker == "PETR4")
+    assert petr.technicals.preco == 50.0
+    assert petr.technicals.mm200 is None
+    assert petr.technicals.ifr is None
+    assert petr.technicals.boll_inf is None
+    assert petr.technicals.hv is None
+    stamp = next(s for s in snap.stamps if s.source == "yahoo")
+    assert stamp.ok is True
+    assert stamp.error is None
+
+
 
 def test_price_fetch_excecao_ainda_chama_brapi():
     price, iv, fund, universe, now = _petr_inputs()

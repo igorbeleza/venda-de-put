@@ -247,7 +247,8 @@ def run_scrape(
             )
             preco = spots.get(fund.ticker, prev.preco)
         else:
-            mm200 = ifr = boll = hv = preco = None
+            mm200 = ifr = boll = hv = None
+            preco = spots.get(fund.ticker)
         if ivp is not None:
             iv_val, iv_rank, iv_pct = ivp.iv, ivp.iv_rank, ivp.iv_percentile
         elif prev is not None:
