@@ -19,3 +19,11 @@ class FundamentalsSource(Protocol):
 
 class ChainSource(Protocol):
     def fetch_chain(self, ticker: str) -> list[PutQuote]: ...
+
+
+class SpotSource(Protocol):
+    def fetch_spots(self, tickers: list[str]) -> dict[str, float]: ...
+
+
+class HistoryBootstrap(Protocol):
+    def fetch_history(self, tickers: list[str]) -> dict[str, CandleSeries]: ...
