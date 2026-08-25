@@ -15,3 +15,7 @@ def test_web_app_does_not_import_run_scrape():
         (mod or "").endswith("scrape") or "run_scrape" in names
         for mod, names in imported
     )
+    assert "venda_de_put.sources.brapi" not in src
+    assert "venda_de_put.sources.cotahist" not in src
+    assert "BrapiSpotHttp" not in src
+    assert "CotahistBootstrap" not in src

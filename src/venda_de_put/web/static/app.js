@@ -316,6 +316,12 @@ async function loadDashboard() {
   const data = await res.json();
   document.getElementById("carimbo").textContent = stampText(data.generated_at);
   document.getElementById("badge-stale").classList.toggle("hidden", !data.stale);
+  const notice = document.getElementById("price-notice");
+  if (notice) {
+    const text = data.price_notice || "";
+    notice.textContent = text;
+    notice.classList.toggle("hidden", !text);
+  }
   const p = data.premio_alvo;
   const meta30 = data.meta_premio_30d;
   const dias = data.vencimento && data.vencimento.dias_corridos;

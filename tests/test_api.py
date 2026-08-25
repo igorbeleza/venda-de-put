@@ -16,6 +16,7 @@ from venda_de_put.auth import create_session_token
 from venda_de_put.models import Vencimento
 from venda_de_put.tz import TZ
 from venda_de_put.web.app import create_app, label_vencimento
+from venda_de_put.scrape_progress import PRICE_NOTICE
 
 
 class FakePrice:
@@ -454,3 +455,32 @@ def test_get_snap_reloads_when_mtime_changes(data_dir):
     after = client.get("/api/ativos").json()
     assert after["total"] == 0
     assert first > 0
+
+
+def test_dashboard_price_notice_null_quando_yahoo_ok(data_dir):
+    app = create_app(data_dir=data_dir)
+    payload = TestClient(app).get("/api/dashboard").json()
+    assert payload["price_notice"] is None
+
+
+def test_dashboard_price_notice_quando_yahoo_falhou(data_dir):
+    from dataclasses import replace
+    from venda_de_put.snapshot import read_snapshot, write_snapshot
+
+    app = create_app(data_dir=data_dir)
+    snap = read_snapshot(app.state.snapshot_path)
+    stamps = []
+    for s in snap.stamps:
+        if s.source == "yahoo":
+            stamps.append(replace(s, ok=False, error=PRICE_NOTICE, stale=True))
+        else:
+            stamps.append(s)
+    write_snapshot(
+        replace(snap, stamps=stamps),
+        app.state.snapshot_path,
+        app.state.history_dir,
+        archive_if_1600=False,
+    )
+    app.state.snapshot = None
+    payload = TestClient(app).get("/api/dashboard").json()
+    assert payload["price_notice"] == PRICE_NOTICE

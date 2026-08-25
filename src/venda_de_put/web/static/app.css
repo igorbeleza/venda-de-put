@@ -1107,6 +1107,17 @@ input.edit, .config-form input.edit {
   color: var(--brass-ink);
 }
 
+.price-notice {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+  border: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 28%, transparent);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
 .card-strip {
   margin: 8px 0;
   display: grid;

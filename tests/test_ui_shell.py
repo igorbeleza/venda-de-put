@@ -106,3 +106,18 @@ def test_home_assets_e_api_sao_relativos(tmp_path):
     assert "fetch(`/api/" not in js
     assert 'fetch("api/' in js
     assert "fetch(`api/" in js
+
+
+def test_dashboard_faixa_price_notice(tmp_path):
+    app = create_app(data_dir=tmp_path)
+    client = TestClient(app)
+    html = client.get("/").text
+    assert 'id="price-notice"' in html
+    assert "premio-tape" in html
+    # faixa depois da fita, antes das listas
+    assert html.find("premio-tape") < html.find('id="price-notice"') < html.find('class="lists"')
+    css = client.get("/static/app.css").text
+    assert ".price-notice" in css
+    js = client.get("/static/app.js").text
+    assert "price_notice" in js
+    assert 'getElementById("price-notice")' in js

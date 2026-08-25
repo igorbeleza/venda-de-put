@@ -342,6 +342,12 @@ def create_app(data_dir: Path) -> FastAPI:
         v = _pick_vencimento(rows, vencimento, bool(so_mensais))
         premio = premio_alvo(cfg.meta_premio_30d, v.dias_corridos)
         stale = is_stale(snap.stamps, datetime.now(TZ), cfg, holidays)
+        yahoo_stamp = next((s for s in snap.stamps if s.source == "yahoo"), None)
+        price_notice = (
+            yahoo_stamp.error
+            if yahoo_stamp is not None and not yahoo_stamp.ok
+            else None
+        )
         def with_strike(a):
             row = _enrich_asset(a, universe, by_fund)
             pick = select_strike(
@@ -372,6 +378,7 @@ def create_app(data_dir: Path) -> FastAPI:
             },
             "stamps": [_stamp_out(s) for s in snap.stamps],
             "stale": stale,
+            "price_notice": price_notice,
             "generated_at": snap.generated_at.isoformat(),
         }
 
