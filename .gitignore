@@ -30,6 +30,7 @@ htpasswd
 data/snapshots/current.json
 data/snapshots/history/
 data/snapshots/scrape_progress.json
+data/cotahist/
 
 # Planilha original e protótipo de UI — locais, não autoridade
 *.xlsx

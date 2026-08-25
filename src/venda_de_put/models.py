@@ -117,6 +117,7 @@ class CandleSeries:
     max_52: Optional[float]
     min_52: Optional[float]
     collected_at: datetime
+    timestamps: list[Optional[int]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
