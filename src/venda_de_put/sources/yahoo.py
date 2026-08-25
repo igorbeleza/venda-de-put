@@ -68,7 +68,7 @@ class YahooHttp:
                 if "range=max" in url:
                     raise ValueError("Yahoo URL não pode usar range=max")
                 last_err: Exception | None = None
-                for _attempt in range(2):
+                for _attempt in range(3):
                     try:
                         resp = client.get(url, headers={"User-Agent": USER_AGENT})
                         resp.raise_for_status()
