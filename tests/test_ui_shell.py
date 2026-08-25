@@ -11,6 +11,15 @@ def test_pyproject_empacota_html_css_js():
     assert "instrucoes.md" in text
 
 
+def test_home_mostra_versao_no_rodape(tmp_path):
+    from venda_de_put import __version__
+
+    html = TestClient(create_app(data_dir=tmp_path)).get("/").text
+    footer = html.split("<footer>", 1)[1].split("</footer>", 1)[0]
+    assert f"versão {__version__}" in footer
+    assert "Ferramenta de seleção, não recomendação" in footer
+
+
 def test_home_has_eight_tabs_and_narratives(tmp_path):
     app = create_app(data_dir=tmp_path)
     html = TestClient(app).get("/").text

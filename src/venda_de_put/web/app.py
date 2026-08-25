@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+
+from venda_de_put import __version__
 
 from venda_de_put.auth import (
     SESSION_MAX_AGE_SECONDS,
@@ -556,7 +558,9 @@ def create_app(data_dir: Path) -> FastAPI:
 
     @app.get("/")
     def home():
-        return FileResponse(templates_dir / "index.html")
+        html = (templates_dir / "index.html").read_text(encoding="utf-8")
+        html = html.replace("{{APP_VERSION}}", __version__, 1)
+        return HTMLResponse(html)
 
     @app.post("/api/login")
     def login(body: dict, request: Request, response: Response):

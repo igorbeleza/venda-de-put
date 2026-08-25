@@ -775,6 +775,11 @@ footer {
   color: var(--ink-3);
 }
 
+footer .app-version {
+  margin-left: 0.75em;
+  white-space: nowrap;
+}
+
 .list-block + .list-block {
   margin-top: 36px;
   padding-top: 8px;
