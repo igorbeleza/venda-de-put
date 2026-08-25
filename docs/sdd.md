@@ -19,7 +19,9 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 
 | Módulo | Faz |
 |---|---|
-| `sources/yahoo.py` | Chart 2y/1d, fecha `null` como buraco |
+| `sources/yahoo.py` | Chart 2y/1d, 3 tentativas, fecha `null` como buraco |
+| `sources/brapi.py` | À vista em lote; só se o Yahoo perdeu o ticker |
+| `sources/cotahist.py` | ZIP anual B3 → série de fechamentos dos tickers frios |
 | `sources/oplab.py` | IV da lista; cadeia `__NEXT_DATA__` |
 | `sources/fundamentus.py` | Tabela iso-8859-1, % em fração |
 | `indicators.py` | SMA, Wilder 14, Bollinger /n, HV log 21 |
@@ -41,6 +43,7 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 - Painel Config / Raspagem: carimbo da última coleta, barra de passos (ok / falhou / raspando / pulado / sem dado) e botão de retry no passo que falhou.
 - Retry de um passo puxa os dependentes: Yahoo → os quatro; OpLab → OpLab + Cadeia; Fundamentus → Fundamentus + Cadeia; Cadeia → só Cadeia. Se a última raspagem tem mais de 1 hora, o retry vira o ciclo inteiro (`retry_completo`).
 - Sair da aba Config não mata o subprocesso. O status continua sendo consultado; ao terminar, Dashboard e a aba visível relêem o snapshot.
+- Preço: Yahoo (3 tentativas/ticker). Ticker faltoso → brapi.dev à vista (`VENDA_DE_PUT_BRAPI_TOKEN`). Sem técnico anterior aproveitável (`preco`/`mm200`) → Cotahist `COTAHIST_A{ano}` em `data/cotahist/`. Consulta ao vivo falhou → carimbo yahoo `ok=false` com `PRICE_NOTICE`; Dashboard mostra `price_notice`.
 - Cadeia: só tickers das três listas, séries ≤ 120 dias. Campos: `due_date`, `strike`, `bid`, `ask`, `last` (`put.close`), `symbol`, `delta`, `poe`, `volume`.
 - Fonte morta: mantém o pedaço anterior e carimba `ok=false` / `stale`.
 
@@ -84,6 +87,8 @@ HTML e JS usam caminhos relativos (`static/…`, `fetch("api/…")`), não `/sta
 ## Armadilhas de fonte
 
 - Yahoo: `null` no close é buraco, não zero. Sem isso IFR/HV/MM mentem. O à vista do instante (`preco`) é o último período da série: troca a barra de hoje ou anexa. Ver `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`. Cotações ~15 minutos atrasadas em relação ao horário da raspagem (não é o pregão do carimbo).
+- Yahoo: Chart 2y/1d, 3 tentativas por ticker; fecha `null` como buraco.
+- brapi sem token não chama rede; Cotahist não ajusta desdobro; cache do ano corrente revalida após 1 dia.
 - OpLab cadeia: página grande (VALE3 ~5 MB). Não persistir o HTML.
 - Fundamentus: charset iso-8859-1; percentuais da tabela viram fração (0,10 = 10%).
 - Snapshot antigo sem `last`: até o próximo scrape a série fica sem liquidez. Campo opcional no load.
