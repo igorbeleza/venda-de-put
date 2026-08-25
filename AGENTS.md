@@ -15,6 +15,7 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 - **Escopo, listas, meta, janela 45–21** → `docs/mvp.md`.
 - **Strike, prêmio, cadeia OpLab, `bs.bid`** → `docs/sdd.md` e `docs/superpowers/specs/2026-08-13-fase2-strike-design.md`.
 - **ScoreF, PctF, ScoreT, ScoreC, listas ①②③** → `docs/scoring.md` e `src/venda_de_put/scoring.py`.
+- **Como a planilha Excel virou esta página** → `docs/conversao-excel.md`. Briefs originais em `docs/archive/2026-08-prompts-iniciais/`.
 - **Indicadores (IFR, MM200, Bollinger, HV)** → `src/venda_de_put/indicators.py` e `docs/sdd.md`. Último período = à vista do instante: `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`.
 - **Login de admin, Config/Feriados gateados, raspar sob demanda** → `docs/adr/0004-login-admin-unico.md`.
 - **Fallback de preço brapi/Cotahist** → `docs/superpowers/specs/2026-08-24-brapi-cotahist-fallback-preco-design.md`; código em `sources/brapi.py`, `sources/cotahist.py`, encadeado em `scrape.py`.

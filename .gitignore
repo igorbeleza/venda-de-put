@@ -43,3 +43,8 @@ archive/main-antes-do-merge-designs/
 
 # Units, template nginx e runbook — só na máquina (VPS já tem sites em produção)
 deploy/
+
+# Rascunhos locais, dumps de VPS e ferramentas de editor — nunca versionar
+.scratch/
+.commandcode/
+.simplicio/

@@ -1,22 +1,105 @@
 # Venda de PUT
 
-Seleção de ativos da B3 para venda de put: três listas, prêmio-alvo e strike no vencimento escolhido.
+**Versão 1.0.0** — primeira versão estável.
 
-Branch de integração: **`main`** (este dashboard Python). Zips locais (fora do git): árvore Go em `archive/main-antes-do-reset/`; `main` de 18/08/2026 (antes do merge de `igorbeleza/designs`) em `archive/main-antes-do-merge-designs/`.
+Página web que responde: **quais papéis do universo da B3 aceito vender put agora**,
+com strike e taxa no vencimento escolhido. Substitui a planilha Excel que dependia
+de colar Fundamentus e de um terminal de corretora via RTD.
+
+Três listas no Dashboard (fundamentalista, técnico, combinado), prêmio-alvo
+escalado por √(dias/30) e strike de entrada no vencimento. Ferramenta de seleção,
+não recomendação de compra ou venda.
+
+Como as fórmulas da planilha viraram esta página: [docs/conversao-excel.md](docs/conversao-excel.md).
+Glossário: [CONTEXT.md](CONTEXT.md).
+
+## O que faz
+
+- Oito abas: Dashboard, Ativos, Dados, Setores, Config, Vencimentos, Feriados, Instruções.
+- Universo curado (ticker → grupo) em `data/universe.json`.
+- Coleta: Yahoo (preço e série), OpLab (IV e cadeia de puts), Fundamentus (balanço). Se o Yahoo perde um ticker (3 tentativas), o à vista vem da brapi.dev; sem técnico anterior, a série vem dos ZIPs Cotahist da B3.
+- Estado de mercado = um JSON em disco. A UI só lê. Atualizar relê o arquivo; raspar é outro passo.
+- Login de administrador único gateia Config, Feriados e o botão de raspar.
+- Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
+
+Escopo fechado: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md).
+
+## Requisitos
+
+- Python 3.11 ou mais novo
+- Rede só na hora do scrape (Yahoo, OpLab, Fundamentus; brapi e Cotahist no fallback)
+
+## Subir local
 
 ```
 python -m pip install -e ".[dev]"
-cp .env.example .env   # admin: VENDA_DE_PUT_ADMIN_PASSWORD e VENDA_DE_PUT_SECRET_KEY
-                       # opcional: VENDA_DE_PUT_BRAPI_TOKEN (à vista se o Yahoo falhar 3 vezes no ticker)
+cp .env.example .env
+```
+
+No Windows o equivalente do `cp` é `copy .env.example .env`. Preencha:
+
+| Variável | Para quê |
+|---|---|
+| `VENDA_DE_PUT_ADMIN_PASSWORD` | senha do admin (Config / Feriados / raspar) |
+| `VENDA_DE_PUT_SECRET_KEY` | assina o cookie; `openssl rand -hex 32` |
+| `VENDA_DE_PUT_BRAPI_TOKEN` | opcional; à vista se o Yahoo falhar 3 vezes no ticker |
+
+```
 python -m venda_de_put scrape
 python -m venda_de_put serve --host 127.0.0.1 --port 8765
 python -m pytest
 ```
 
-Windows sem terminal: duplo-clique `iniciar-dashboard.bat`.
+Windows sem terminal: duplo-clique em `iniciar-dashboard.bat` (abre o navegador;
+se 8765 estiver ocupada, escolhe outra porta).
 
-HTML/JS usam URL relativa (`static/…`, `api/…`): o dashboard roda na raiz local e também atrás de um prefixo no proxy. Assets de UI vão no `pip install` (`package-data`). Detalhe de hospedagem fica na pasta local `deploy/` (fora do git).
+HTML e JS usam URL relativa (`static/…`, `api/…`): funciona na raiz e atrás de
+um prefixo no proxy. Assets de UI entram no `pip install` (`package-data`).
+
+`VENDA_DE_PUT_DATA` aponta o diretório `data/` para outro lugar, se precisar.
+
+## Como está organizado
+
+```
+scrape (Yahoo + OpLab + Fundamentus [+ brapi/Cotahist])
+   → data/snapshots/current.json
+   → GET /api/*  →  app.js (uma página, oito abas)
+```
+
+| Pasta / arquivo | Papel |
+|---|---|
+| `src/venda_de_put/` | pacote: fontes, indicadores, scoring, strike, API |
+| `src/venda_de_put/web/` | HTML/CSS/JS e o texto da aba Instruções |
+| `data/` | `config.json`, `universe.json`, `feriados.json` (editáveis) |
+| `tests/` | pytest; fixtures extraídas da planilha em `tests/fixtures/` |
+| `docs/` | MVP, SDD, scoring, ADRs, conversão Excel, planos |
 
 Quem for implementar ou revisar com IA: comece em [AGENTS.md](AGENTS.md).
 
-Produto: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md).
+## O que não vai para o GitHub
+
+Segredos e artefatos de máquina ficam fora do git (veja `.gitignore`):
+
+- `.env` (senha, chave de sessão, token brapi)
+- a planilha `.xlsx`
+- snapshot gerado (`data/snapshots/current.json`, Cotahist baixado)
+- `deploy/` (units systemd, nginx, runbook da VPS)
+- zips de checkouts antigos em `archive/`
+- rascunhos locais (`.scratch/`, dumps, editores)
+
+O repositório público leva código, testes, docs de produto e o `.env.example`
+com as chaves **vazias**.
+
+## Documentos
+
+| Documento | Quando abrir |
+|---|---|
+| [CONTEXT.md](CONTEXT.md) | vocabulário (SINAL, PctF, prêmio-alvo…) |
+| [docs/conversao-excel.md](docs/conversao-excel.md) | planilha → esta página |
+| [docs/mvp.md](docs/mvp.md) | o que entra e o que fica fora |
+| [docs/sdd.md](docs/sdd.md) | scrape, snapshot, strike, fontes |
+| [docs/scoring.md](docs/scoring.md) | ScoreF, PctF, ScoreT, ScoreC, listas ①②③ |
+| [docs/adr/](docs/adr/) | decisões que não se revertem de leve |
+| [docs/plano-implementacao.md](docs/plano-implementacao.md) | ponte para o plano executável |
+
+Branch de integração: **`main`**.

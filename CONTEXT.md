@@ -1,8 +1,12 @@
 # Venda de PUT
 
-Seleção de ações da B3 para vender put, com fundamento setorial e timing técnico. Este arquivo é o glossário. Implementação vive no código e em `docs/sdd.md`.
+Seleção de ações da B3 para vender put, com fundamento setorial e timing técnico. Este arquivo é o glossário. Implementação vive no código e em `docs/sdd.md`. Como as fórmulas da planilha viraram esta página: `docs/conversao-excel.md`.
 
 ## Operação
+
+**Planilha**:
+A `carteira_venda_put` original. Referência histórica do modelo; não entra no runtime. A autoridade das contas é o código.
+_Avoid_: Excel como fonte de verdade em produção; colar Fundamentus na mão; RTD de terminal
 
 **Venda de put**:
 Obrigação de comprar o papel no strike se exercido. Aqui a put é coberta por critério (empresa que se aceita carregar), não por hedge automático.
