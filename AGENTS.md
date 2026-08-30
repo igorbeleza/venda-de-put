@@ -18,6 +18,11 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 - **Como a planilha Excel virou esta página** → `docs/conversao-excel.md`. Briefs originais em `docs/archive/2026-08-prompts-iniciais/`.
 - **Indicadores (IFR, MM200, Bollinger, HV)** → `src/venda_de_put/indicators.py` e `docs/sdd.md`. Último período = à vista do instante: `docs/superpowers/specs/2026-08-17-indicadores-ultimo-periodo.md`.
 - **Login de admin, Config/Feriados gateados, raspar sob demanda** → `docs/adr/0004-login-admin-unico.md`.
+- **Carteira pessoal (produto e operação local)** → `docs/carteira-pessoal.md`.
+- **Auth/sessão da carteira** → `src/venda_de_put/carteira/auth.py` e `docs/adr/0005-carteira-multiusuario-sqlite.md`. Cookie `carteira_session`; mutação exige `carteira_csrf`. Independente do admin.
+- **Schema/repositório das entradas amarelas** → `src/venda_de_put/carteira/db.py`, `models.py`, `repository.py`. Toda query de item usa `WHERE id = ? AND user_id = ?`.
+- **Performance / projeção do snapshot** → `src/venda_de_put/carteira/performance.py` e `market.py`. Fórmulas em `docs/carteira-pessoal.md`. Sem I/O de fonte nas requisições pessoais.
+- **UI pessoal `/carteira`** → `docs/carteira-pessoal.md`; templates/estáticos previstos: `web/templates/carteira.html`, `web/static/carteira.js`, `web/static/carteira.css` (globs já cobertos em `pyproject.toml`).
 - **Fallback de preço brapi/Cotahist** → `docs/superpowers/specs/2026-08-24-brapi-cotahist-fallback-preco-design.md`; código em `sources/brapi.py`, `sources/cotahist.py`, encadeado em `scrape.py`.
 - **Deploy VPS** → pasta local `deploy/` (fora do git: host, path, porta, units, nginx). Nenhuma escrita na VPS sem levantamento do nginx. A UI usa URL relativa (`static/…`, `api/…`) e o cookie de admin segue `X-Forwarded-Prefix`, para o app viver atrás de um path.
 - **Briefs antigos** → `docs/archive/2026-08-prompts-iniciais/` só como história. Nunca como regra.
@@ -39,3 +44,4 @@ Dashboard FastAPI que recomenda ativos da B3 para venda de put. Código é a aut
 - Trocar o vencimento recalcula strike e prêmio-alvo. Não reordena as três listas.
 - Dado ausente é o texto “sem dado”, nunca zero inventado.
 - Aba Instruções e testes dela: sem as palavras de terminal de corretora.
+- Carteira pessoal: isolamento por dono; requisição nunca raspa; cotação ausente é “sem dado”, nunca zero.

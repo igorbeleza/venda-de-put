@@ -115,8 +115,8 @@ _Avoid_: IV calculada aqui
 ## Estados
 
 **Snapshot**:
-JSON em disco com ativos, listas, fundamentos, cadeias e carimbos das fontes. O dashboard só lê isso. Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
-_Avoid_: banco, cache em memória como fonte; tratar o carimbo como pregão ao vivo
+JSON em disco com ativos, listas, fundamentos, cadeias e carimbos das fontes. Estado **global de mercado**. O dashboard só lê isso. Cotações ~15 minutos atrasadas em relação ao horário da raspagem. Não guarda lançamento de carteira: o dado pessoal fica no SQLite `data/carteira.sqlite3`, isolado por dono.
+_Avoid_: banco, cache em memória como fonte; tratar o carimbo como pregão ao vivo; misturar snapshot com a carteira pessoal
 
 **Preço da raspagem**:
 À vista (`preco`) da última coleta. Fonte principal: série Yahoo. Se o Yahoo perde o ticker (3 tentativas), o à vista vem da brapi.dev; sem técnico anterior aproveitável, a série vem dos ZIPs Cotahist da B3. Alimenta indicadores, strike e prêmio; é o número que Dashboard e Ativos mostram. A aba Dados exibe a cotação do Fundamentus — outro número.
@@ -149,3 +149,49 @@ _Avoid_: misturar com sem série
 **sem dado**:
 Indicador impossível (histórico curto, IV ausente). Texto visível.
 _Avoid_: 0, célula em branco
+
+## Carteira pessoal
+
+**Carteira pessoal**:
+Área autenticada em `/carteira`. Cada pessoa tem login próprio e só vê os próprios saldos e lançamentos. Independente do admin único. Persistência: SQLite `data/carteira.sqlite3` (ADR 0005). Mercado continua no Snapshot.
+_Avoid_: login de admin como identidade da carteira; um SQLite por pessoa; API que aceita `user_id` no corpo
+
+**Lançamento de carteira**:
+Movimento amarelo de Minha Carteira: data, ativo, classe (`stock`/`margin`), compra/venda, quantidade, preço, observação. Persistido. Totais, posição e P&L saem do cálculo, não do banco.
+_Avoid_: gravar preço médio ou valor atual; lançamento sem dono
+
+**Operação pessoal**:
+Registro amarelo de CALL/PUT da pessoa: venda, ticker, quantidade, strike, vencimento, prêmio, status e, se encerrada antes, custo e data da recompra. O dashboard público não registra nem fecha isso.
+_Avoid_: tratar a seleção pública como diário de trades
+
+**Caixa**:
+Saldo em conta na corretora informado pela pessoa (`cash_cents`). Entrada amarela da Conta.
+_Avoid_: inferir caixa pelo snapshot; zerar quando ausente
+
+**Margem**:
+Classe `margin` nos lançamentos de carteira. Valor de mercado da posição líquida positiva entra no patrimônio e na folga.
+_Avoid_: misturar margem com caixa; inventar 0 sem cotação
+
+**Custódia**:
+Total informado em uma data (`custody_entries`). Série amarela da Evolução, usada no TWR. Não é recalculada pelo motor.
+_Avoid_: derivar custódia da soma das posições e gravar de volta
+
+**Aporte líquido**:
+Aportes menos retiradas acumulados até a data da custódia. Campo calculado da Evolução.
+_Avoid_: tratar retirada como aporte negativo persistido; zerar o TWR quando o denominador é 0
+
+**L/P aberto**:
+Resultado não realizado da opção aberta: `(prêmio/ação − cotação da opção) × quantidade`. `None` / sem dado se a cotação falta ou o status não é `open`.
+_Avoid_: somar L/P aberto no não realizado das ações; gravar o valor
+
+**Capital em risco**:
+Soma `quantidade × strike` das PUT com status `open`. Não precisa de cotação.
+_Avoid_: capital em risco de CALL; exigir preço do papel
+
+**Folga**:
+`caixa + margem − capital em risco`, só quando caixa e margem são conhecidos; senão sem dado.
+_Avoid_: calcular folga com caixa ausente tratado como 0
+
+**Patrimônio líquido**:
+`caixa + ações + margem − opções abertas`, só quando os quatro componentes são conhecidos; senão sem dado.
+_Avoid_: patrimônio parcial preenchido com zero

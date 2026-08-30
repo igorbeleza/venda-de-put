@@ -20,6 +20,9 @@ Glossário: [CONTEXT.md](CONTEXT.md).
 - Coleta: Yahoo (preço e série), OpLab (IV e cadeia de puts), Fundamentus (balanço). Se o Yahoo perde um ticker (3 tentativas), o à vista vem da brapi.dev; sem técnico anterior, a série vem dos ZIPs Cotahist da B3.
 - Estado de mercado = um JSON em disco. A UI só lê. Atualizar relê o arquivo; raspar é outro passo.
 - Login de administrador único gateia Config, Feriados e o botão de raspar.
+- `/carteira` é a carteira pessoal: login de usuário próprio, independente do admin. Cada pessoa só vê os próprios lançamentos.
+- Dados pessoais em `data/carteira.sqlite3` (runtime, fora do git). Mercado continua no snapshot JSON.
+- Detalhe da carteira: [docs/carteira-pessoal.md](docs/carteira-pessoal.md).
 - Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
 
 Escopo fechado: [docs/mvp.md](docs/mvp.md). Desenho: [docs/sdd.md](docs/sdd.md).
@@ -64,6 +67,9 @@ um prefixo no proxy. Assets de UI entram no `pip install` (`package-data`).
 scrape (Yahoo + OpLab + Fundamentus [+ brapi/Cotahist])
    → data/snapshots/current.json
    → GET /api/*  →  app.js (uma página, oito abas)
+
+carteira.sqlite3
+   → /api/carteira  →  /carteira (login de usuário, não o admin)
 ```
 
 | Pasta / arquivo | Papel |
@@ -83,6 +89,7 @@ Segredos e artefatos de máquina ficam fora do git (veja `.gitignore`):
 - `.env` (senha, chave de sessão, token brapi)
 - a planilha `.xlsx`
 - snapshot gerado (`data/snapshots/current.json`, Cotahist baixado)
+- SQLite da carteira (`data/carteira.sqlite3`, `-wal`, `-shm`)
 - `deploy/` (units systemd, nginx, runbook da VPS)
 - zips de checkouts antigos em `archive/`
 - rascunhos locais (`.scratch/`, dumps, editores)
@@ -98,6 +105,7 @@ com as chaves **vazias**.
 | [docs/conversao-excel.md](docs/conversao-excel.md) | planilha → esta página |
 | [docs/mvp.md](docs/mvp.md) | o que entra e o que fica fora |
 | [docs/sdd.md](docs/sdd.md) | scrape, snapshot, strike, fontes |
+| [docs/carteira-pessoal.md](docs/carteira-pessoal.md) | carteira pessoal, campos amarelos/calculados, backup SQLite |
 | [docs/scoring.md](docs/scoring.md) | ScoreF, PctF, ScoreT, ScoreC, listas ①②③ |
 | [docs/adr/](docs/adr/) | decisões que não se revertem de leve |
 | [docs/plano-implementacao.md](docs/plano-implementacao.md) | ponte para o plano executável |
