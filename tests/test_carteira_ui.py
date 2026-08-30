@@ -33,3 +33,32 @@ def test_personal_js_uses_only_relative_api_paths(tmp_path: Path):
     assert 'fetch("/api/' not in js
     assert "fetch(`/api/" not in js
     assert "X-CSRF-Token" in js
+
+
+def test_personal_page_contains_every_yellow_workbook_input(tmp_path: Path):
+    client = TestClient(create_app(data_dir=tmp_path))
+    html = client.get("/carteira").text
+    for field_id in (
+        "cash-cents", "portfolio-date", "portfolio-ticker", "portfolio-class",
+        "portfolio-side", "portfolio-quantity", "portfolio-price",
+        "portfolio-note", "operation-sale-date", "operation-underlying",
+        "operation-option-ticker", "operation-kind", "operation-quantity",
+        "operation-strike", "operation-expiry", "operation-premium",
+        "operation-status", "operation-close-cost", "operation-repurchase-date",
+        "custody-date", "custody-total", "flow-date", "flow-kind",
+        "flow-amount", "flow-note",
+    ):
+        assert f'id="{field_id}"' in html
+    js = client.get("/static/carteira.js").text
+    for function in (
+        "saveAccount", "savePortfolioEntry", "editPortfolioEntry",
+        "deletePortfolioEntry", "saveOperation", "editOperation",
+        "deleteOperation", "saveCustody", "deleteCustody",
+        "saveCashFlow", "deleteCashFlow",
+    ):
+        assert f"function {function}" in js or f"async function {function}" in js
+    assert "innerHTML" not in js
+    assert "window.confirm" in js or "confirm(" in js
+    assert "sem dado" in js
+    assert 'fetch("/api/' not in js
+    assert "fetch(`/api/" not in js

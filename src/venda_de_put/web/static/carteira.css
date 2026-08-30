@@ -114,3 +114,76 @@ footer {
   .carteira-header, .auth-grid, .form-grid, .summary-grid { grid-template-columns: 1fr; }
   .carteira-nav { display: grid; grid-template-columns: 1fr 1fr; }
 }
+
+.carteira-shell textarea {
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--field);
+  color: var(--ink);
+  min-height: 44px;
+  resize: vertical;
+}
+
+#crud-message {
+  min-height: 1.4em;
+  color: #7a3410;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.form-actions button[type="button"] {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+
+.field-error {
+  color: #7a3410;
+  font-size: 0.85rem;
+  min-height: 1.1em;
+}
+
+.close-fields[hidden] {
+  display: none;
+}
+
+.pane-block + .pane-block {
+  margin-top: 24px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.data-table th {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.data-table button {
+  margin: 0 8px 8px 0;
+}
+
+#carteira-pane-resumo h2,
+#carteira-pane-movimentos h2,
+#carteira-pane-operacoes h2,
+#carteira-pane-evolucao h2 {
+  margin-top: 0;
+  color: var(--verde);
+}

@@ -49,10 +49,245 @@
       <button type="button" data-pane="operacoes">Operações</button>
       <button type="button" data-pane="evolucao">Evolução</button>
     </nav>
-    <section id="carteira-pane-resumo"></section>
-    <section id="carteira-pane-movimentos" hidden></section>
-    <section id="carteira-pane-operacoes" hidden></section>
-    <section id="carteira-pane-evolucao" hidden></section>
+    <p id="crud-message" role="status" aria-live="polite"></p>
+    <section id="carteira-pane-resumo">
+      <h2>Caixa na corretora</h2>
+      <form id="account-form" autocomplete="off">
+        <div class="form-grid">
+          <label class="editable-field">Caixa (R$)
+            <input id="cash-cents" name="cash_cents" inputmode="decimal"
+                   aria-describedby="cash-cents-error">
+            <span class="field-error" id="cash-cents-error"></span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit">Salvar caixa</button>
+        </div>
+      </form>
+    </section>
+    <section id="carteira-pane-movimentos" hidden>
+      <h2>Minha carteira</h2>
+      <form id="portfolio-form" autocomplete="off">
+        <input type="hidden" id="portfolio-id" value="">
+        <div class="form-grid">
+          <label class="editable-field">Data
+            <input id="portfolio-date" name="trade_date" type="date" required>
+          </label>
+          <label class="editable-field">Ativo
+            <input id="portfolio-ticker" name="ticker" maxlength="16" required>
+          </label>
+          <label class="editable-field">Classe
+            <select id="portfolio-class" required>
+              <option value="stock">Ação</option>
+              <option value="margin">Margem</option>
+            </select>
+          </label>
+          <label class="editable-field">Compra ou venda
+            <select id="portfolio-side" required>
+              <option value="buy">Compra</option>
+              <option value="sell">Venda</option>
+            </select>
+          </label>
+          <label class="editable-field">Quantidade
+            <input id="portfolio-quantity" name="quantity" type="number" min="1" step="1"
+                   inputmode="numeric" required>
+          </label>
+          <label class="editable-field">Preço (R$)
+            <input id="portfolio-price" name="price" inputmode="decimal" required
+                   aria-describedby="portfolio-price-error">
+            <span class="field-error" id="portfolio-price-error"></span>
+          </label>
+          <label class="editable-field">Observação
+            <textarea id="portfolio-note" name="note" maxlength="500"></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit">Salvar movimento</button>
+          <button type="button" id="portfolio-cancel">Cancelar edição</button>
+        </div>
+      </form>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Ativo</th>
+              <th>Classe</th>
+              <th>Lado</th>
+              <th>Qtd</th>
+              <th>Preço</th>
+              <th>Observação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="carteira-pane-operacoes" hidden>
+      <h2>Operações</h2>
+      <form id="operation-form" autocomplete="off">
+        <input type="hidden" id="operation-id" value="">
+        <div class="form-grid">
+          <label class="editable-field">Data da venda
+            <input id="operation-sale-date" name="sale_date" type="date" required>
+          </label>
+          <label class="editable-field">Ativo
+            <input id="operation-underlying" name="underlying" maxlength="16" required>
+          </label>
+          <label class="editable-field">Ticker da opção
+            <input id="operation-option-ticker" name="option_ticker" maxlength="32" required>
+          </label>
+          <label class="editable-field">Tipo
+            <select id="operation-kind" required>
+              <option value="put">Venda de PUT</option>
+              <option value="call">Venda de CALL</option>
+            </select>
+          </label>
+          <label class="editable-field">Quantidade
+            <input id="operation-quantity" name="quantity" type="number" min="1" step="1"
+                   inputmode="numeric" required>
+          </label>
+          <label class="editable-field">Strike (R$)
+            <input id="operation-strike" name="strike" inputmode="decimal" required
+                   aria-describedby="operation-strike-error">
+            <span class="field-error" id="operation-strike-error"></span>
+          </label>
+          <label class="editable-field">Vencimento
+            <input id="operation-expiry" name="expiry_date" type="date" required>
+          </label>
+          <label class="editable-field">Prêmio por ação (R$)
+            <input id="operation-premium" name="premium" inputmode="decimal" required
+                   aria-describedby="operation-premium-error">
+            <span class="field-error" id="operation-premium-error"></span>
+          </label>
+          <label class="editable-field">Status
+            <select id="operation-status" required>
+              <option value="open">Aberta</option>
+              <option value="expired">Virou pó (expirou)</option>
+              <option value="exercised">Exercida</option>
+              <option value="closed_early">Encerrada antes</option>
+            </select>
+          </label>
+        </div>
+        <div id="operation-close-fields" class="close-fields form-grid" hidden>
+          <label class="editable-field">Custo por ação para encerrar (R$)
+            <input id="operation-close-cost" name="close_cost" inputmode="decimal"
+                   aria-describedby="operation-close-cost-error">
+            <span class="field-error" id="operation-close-cost-error"></span>
+          </label>
+          <label class="editable-field">Data da recompra
+            <input id="operation-repurchase-date" name="repurchase_date" type="date">
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit">Salvar operação</button>
+          <button type="button" id="operation-cancel">Cancelar edição</button>
+        </div>
+      </form>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Venda</th>
+              <th>Ativo</th>
+              <th>Opção</th>
+              <th>Tipo</th>
+              <th>Qtd</th>
+              <th>Strike</th>
+              <th>Vencimento</th>
+              <th>Prêmio/ação</th>
+              <th>Status</th>
+              <th>Custo encerrar</th>
+              <th>Recompra</th>
+              <th>Prêmio total</th>
+              <th>Encerramento</th>
+              <th>Resultado líquido</th>
+              <th>Narrativa</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="operations-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="carteira-pane-evolucao" hidden>
+      <div class="pane-block">
+        <h2>Custódia</h2>
+        <form id="custody-form" autocomplete="off">
+          <input type="hidden" id="custody-id" value="">
+          <div class="form-grid">
+            <label class="editable-field">Data
+              <input id="custody-date" name="as_of_date" type="date" required>
+            </label>
+            <label class="editable-field">Custódia total (R$)
+              <input id="custody-total" name="total" inputmode="decimal" required
+                     aria-describedby="custody-total-error">
+              <span class="field-error" id="custody-total-error"></span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Salvar custódia</button>
+            <button type="button" id="custody-cancel">Cancelar edição</button>
+          </div>
+        </form>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Custódia</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="custody-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="pane-block">
+        <h2>Aportes e retiradas</h2>
+        <form id="flow-form" autocomplete="off">
+          <input type="hidden" id="flow-id" value="">
+          <div class="form-grid">
+            <label class="editable-field">Data
+              <input id="flow-date" name="flow_date" type="date" required>
+            </label>
+            <label class="editable-field">Tipo
+              <select id="flow-kind" required>
+                <option value="contribution">Aporte</option>
+                <option value="withdrawal">Retirada</option>
+              </select>
+            </label>
+            <label class="editable-field">Valor (R$)
+              <input id="flow-amount" name="amount" inputmode="decimal" required
+                     aria-describedby="flow-amount-error">
+              <span class="field-error" id="flow-amount-error"></span>
+            </label>
+            <label class="editable-field">Observação
+              <textarea id="flow-note" name="note" maxlength="500"></textarea>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit">Salvar fluxo</button>
+            <button type="button" id="flow-cancel">Cancelar edição</button>
+          </div>
+        </form>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Observação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="flows-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </section>
   <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo. <span class="app-version">versão {{APP_VERSION}}</span></footer>
 </main>
