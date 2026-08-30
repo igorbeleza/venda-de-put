@@ -120,6 +120,17 @@ def data_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.fixture
+def calendario_em_15_de_agosto(monkeypatch) -> date:
+    class DatetimeCongelado(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 8, 15, tzinfo=tz)
+
+    monkeypatch.setattr("venda_de_put.web.app.datetime", DatetimeCongelado)
+    return date(2026, 8, 15)
+
+
 def test_scrape_status_passos_vêm_dos_stamps_sem_progresso(data_dir):
     from venda_de_put.auth import create_session_token
 
@@ -259,12 +270,12 @@ def test_put_config_rejects_calendario_ate_no_passado(data_dir):
     assert r.status_code == 400
 
 
-def test_dashboard_anexa_strike_e_metas(data_dir):
+def test_dashboard_anexa_strike_e_metas(data_dir, calendario_em_15_de_agosto):
     app = create_app(data_dir=data_dir)
     c = TestClient(app)
     payload = c.get("/api/dashboard", params={"vencimento": "2026-08-21", "so_mensais": 1}).json()
     assert payload["meta_premio_30d"] == 0.0115
-    dias = (date(2026, 8, 21) - datetime.now(TZ).date()).days
+    dias = (date(2026, 8, 21) - calendario_em_15_de_agosto).days
     assert payload["vencimento"]["dias_corridos"] == dias
     assert abs(payload["premio_alvo"] - (0.0115 * (dias / 30) ** 0.5)) < 1e-9
     rows = (
@@ -280,7 +291,7 @@ def test_dashboard_anexa_strike_e_metas(data_dir):
     assert petr["preco"] == 41.75
 
 
-def test_trocar_vencimento_nao_reordena(data_dir):
+def test_trocar_vencimento_nao_reordena(data_dir, calendario_em_15_de_agosto):
     app = create_app(data_dir=data_dir)
     c = TestClient(app)
     a = c.get("/api/dashboard", params={"vencimento": "2026-08-21", "so_mensais": 1}).json()
@@ -343,7 +354,7 @@ def test_instrucoes_ifr_sem_profit(data_dir):
     assert "raspagem" in text.lower()
 
 
-def test_feriados_put_muda_vencimentos(data_dir):
+def test_feriados_put_muda_vencimentos(data_dir, calendario_em_15_de_agosto):
     app = create_app(data_dir=data_dir)
     client = TestClient(app)
     client.cookies.set("session", create_session_token())
