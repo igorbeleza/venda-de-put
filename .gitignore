@@ -32,6 +32,11 @@ data/snapshots/history/
 data/snapshots/scrape_progress.json
 data/cotahist/
 
+# Carteira pessoal multiusuário (runtime, nunca versionar)
+data/carteira.sqlite3
+data/carteira.sqlite3-shm
+data/carteira.sqlite3-wal
+
 # Planilha original e protótipo de UI — locais, não autoridade
 *.xlsx
 *.xls

@@ -13,7 +13,7 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 - Oito abas: Dashboard, Ativos, Dados, Setores, Config, Vencimentos, Feriados, Instruções.
 - Três listas Top 10 no Dashboard (fundamentalista, técnico, combinado) com os textos narrativos fixos.
 - Seletor de vencimento. Padrão: próximo mensal. Toggle “só mensais”.
-- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config, na calculadora, em porcentagem (1,15%), gravada como fração. O 1% que se busca no strike em 30 dias vira 1,15% porque a put é recomprada com 70% do prêmio exaurido (venda 1,00 → recompra 0,30), sem depender do prazo. O dashboard não registra nem fecha a operação; só escolhe strike com essa meta.
+- Prêmio-alvo = meta 30d × √(dias corridos / 30). Meta 30d editável no Config, na calculadora, em porcentagem (1,15%), gravada como fração. O 1% que se busca no strike em 30 dias vira 1,15% porque a put é recomprada com 70% do prêmio exaurido (venda 1,00 → recompra 0,30), sem depender do prazo. O dashboard público não registra nem fecha a operação; isso pertence exclusivamente à carteira autenticada.
 - Aba Config / Raspagem: carimbo da última coleta, passos por fonte e retry do passo que falhou (com dependentes; ciclo inteiro se a coleta tem mais de 1 hora).
 - Strike de entrada no vencimento escolhido (ver `docs/sdd.md`).
 - Coleta Yahoo + OpLab + Fundamentus → snapshot em disco. Se o Yahoo perde um ticker (3 tentativas), o scrape busca à vista na brapi.dev; sem técnico anterior aproveitável, monta histórico pelos ZIPs Cotahist da B3. Botão Atualizar relê o arquivo; não raspa. Cotações ~15 minutos atrasadas em relação ao horário da raspagem.
@@ -23,6 +23,12 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 - Login de administrador único (senha em `VENDA_DE_PUT_ADMIN_PASSWORD`, sessão por cookie assinado) gateia as abas Config e Feriados (ambas somem do menu pra quem não está logado) e o botão de raspar sob demanda — ver `docs/adr/0004-login-admin-unico.md`. Deploy não precisa mais de htpasswd no nginx para o site ser visto; pode manter por outros motivos.
 - Horizonte do calendário de Vencimentos (`calendario_ate`, hoje 31/12/2027) é editável no Config, mesma tela do admin.
 
+## Carteira pessoal
+
+`/carteira` é uma área autenticada separada das oito abas públicas. Cada pessoa tem seu próprio login e acessa somente seus saldos, lançamentos de carteira, operações com opções, custódia e fluxos de caixa. Esses dados ficam em `data/carteira.sqlite3`. Os valores de mercado continuam vindo do snapshot público.
+
+O login pessoal não concede acesso de administrador. O login de administrador também não identifica uma pessoa na carteira. A separação entre as duas identidades segue `docs/adr/0005-carteira-multiusuario-sqlite.md`.
+
 ## Janela e entrada
 
 - Operação abre com **45 a 21 dias corridos** até o vencimento. O seletor lista outras séries para consulta.
@@ -31,8 +37,6 @@ Substitui a planilha Excel + terminal de corretora. O modelo de scoring (ranks s
 
 ## Não cabe
 
-- Registrar operação, P&L, ajuste ou exercício.
-- Banco, usuário, multi-tenant.
 - Raspar a cada request ou no botão Atualizar.
 - Escolher strike por bid, mid ou prêmio teórico.
 - Reordenar as listas ao trocar o vencimento.

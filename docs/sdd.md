@@ -4,16 +4,20 @@ Desenho do sistema Python neste repositório. Autoridade de arquitetura. Glossá
 
 ## Forma
 
-Processo único FastAPI + uvicorn, só `127.0.0.1`. Estado de mercado = um snapshot JSON no disco (`data/snapshots/current.json`). Sem banco.
+Processo único FastAPI + uvicorn, só `127.0.0.1`. O estado global de mercado continua em um snapshot JSON no disco (`data/snapshots/current.json`). Os dados pessoais usam o SQLite `data/carteira.sqlite3`, conforme `docs/adr/0005-carteira-multiusuario-sqlite.md`.
 
 ```
 Yahoo ──┐  (+ brapi à vista / Cotahist se Yahoo perde ticker)
 OpLab ──┼─ scrape ─► snapshot ─► GET /api/* ─► app.js
 Fund. ──┘              ▲
                        └── POST /api/refresh só relê
+
+carteira.sqlite3 ─► /api/carteira ─► carteira.js
 ```
 
-Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editáveis: `data/config.json`, `data/universe.json`, `data/feriados.json`.
+As duas ramificações não mudam de fonte. Requisições da carteira nunca chamam Yahoo, brapi, Cotahist, OpLab ou Fundamentus. Quando a carteira precisa de preço ou indicador, lê o snapshot global.
+
+Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editáveis globais: `data/config.json`, `data/universe.json`, `data/feriados.json`. Dados pessoais: `data/carteira.sqlite3`.
 
 ## Módulos
 
@@ -35,6 +39,15 @@ Pacote: `src/venda_de_put/`. UI: `web/templates` + `web/static`. Dados editávei
 | `snapshot.py` | Lê/grava JSON, campos novos com default |
 | `web/app.py` | API. Não importa `run_scrape`; raspagem sob demanda sobe `python -m venda_de_put scrape` como subprocesso. Cookie: `Path` de `X-Forwarded-Prefix`, `Secure` se `X-Forwarded-Proto` é https |
 | `auth.py` | Login de admin único: senha via env, cookie de sessão HMAC |
+| `carteira/db.py` | Conexão SQLite e migrações dos dados pessoais |
+
+## Identidade e isolamento da carteira
+
+O administrador e as pessoas da carteira têm identidades independentes. A sessão pessoal usa o cookie `carteira_session`, e operações que mudam dados exigem o cookie `carteira_csrf`. Nenhum desses cookies concede acesso às rotas administrativas. O cookie administrativo também não autoriza `/api/carteira`.
+
+`users` define o proprietário. Todas as outras tabelas pessoais apontam diretamente para `users.id` por `user_id`. Toda leitura, alteração ou exclusão de um registro pessoal identificado por ID usa o predicado `WHERE id = ? AND user_id = ?`. A API obtém `user_id` da sessão e nunca aceita esse campo no corpo da requisição.
+
+O banco guarda somente entradas pessoais. Totais, posições, P&L e outros valores derivados são calculados a partir dessas entradas e do snapshot global.
 
 ## Coleta
 
