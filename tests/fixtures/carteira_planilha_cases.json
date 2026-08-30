@@ -1,0 +1,14 @@
+{
+  "open_puts": [
+    {"underlying": "PSSA3", "option": "PSSAU523", "quantity": 200, "strike_cents": 5195, "premium_cents": 80, "underlying_price_cents": 5418, "option_price_cents": 80},
+    {"underlying": "CPFE3", "option": "CPFEU437", "quantity": 200, "strike_cents": 4373, "premium_cents": 64, "underlying_price_cents": 4595, "option_price_cents": 67},
+    {"underlying": "BBDC4", "option": "BBDCU21", "quantity": 600, "strike_cents": 1733, "premium_cents": 29, "underlying_price_cents": 1829, "option_price_cents": 29},
+    {"underlying": "CSMG3", "option": "CSMGU598", "quantity": 200, "strike_cents": 5952, "premium_cents": 89, "underlying_price_cents": 6292, "option_price_cents": 81}
+  ],
+  "expected": {
+    "premium_total_cents": 64000,
+    "capital_at_risk_cents": 4143800,
+    "open_profit_cents": 1000,
+    "open_option_market_value_cents": 63000
+  }
+}
