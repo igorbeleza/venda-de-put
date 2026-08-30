@@ -12,6 +12,7 @@ from venda_de_put.auth import (
     verify_session_token,
 )
 from venda_de_put.web.app import create_app, require_admin
+from venda_de_put.web.http_security import cookie_path, cookie_secure
 
 
 @pytest.fixture
@@ -114,6 +115,10 @@ def test_login_cookie_path_raiz_sem_prefixo(data_dir: Path, monkeypatch):
     assert "session=" in cookie
     assert "Path=/venda-de-put" not in cookie
     assert "Path=/" in cookie
+    assert "HttpOnly" in cookie
+    assert "SameSite=lax" in cookie
+    assert f"Max-Age={SESSION_MAX_AGE_SECONDS}" in cookie
+    assert "carteira_session=" not in cookie
 
 
 def test_login_cookie_path_segue_x_forwarded_prefix(data_dir: Path, monkeypatch):
@@ -143,6 +148,21 @@ def test_login_cookie_secure_atras_de_https(data_dir: Path, monkeypatch):
     cookie = _set_cookie_header(res)
     assert "Path=/venda-de-put" in cookie
     assert "Secure" in cookie
+
+
+def test_cookie_helpers_rejeitam_prefixo_invalido_e_usam_scheme_https():
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [(b"x-forwarded-prefix", b"//outro-host")],
+            "scheme": "https",
+            "server": ("testserver", 443),
+        }
+    )
+    assert cookie_path(request) == "/"
+    assert cookie_secure(request) is True
 
 
 def test_logout_apaga_cookie_no_mesmo_prefixo(data_dir: Path, monkeypatch):
@@ -457,6 +477,5 @@ def test_main_cli_force_fundamentus_parsing(monkeypatch):
 
     main(["scrape", "--from-step", "oplab"])
     assert calls[-1] == (None, None, "oplab")
-
 
 

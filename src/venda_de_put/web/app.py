@@ -55,6 +55,7 @@ from venda_de_put.scrape_progress import (
 )
 from venda_de_put.snapshot import is_stale, read_snapshot, snapshot_to_dict, write_snapshot
 from venda_de_put.tz import TZ
+from venda_de_put.web.http_security import cookie_path, cookie_secure
 
 _INSTRUCOES = (
     "Ferramenta de seleção para venda de put coberta por critério próprio.\n"
@@ -248,22 +249,6 @@ def _recalc(snap: Snapshot, cfg: AppConfig, universe: dict[str, str]) -> Snapsho
         fundamentus_rows=snap.fundamentus_rows,
         chains=snap.chains,
     )
-
-
-def _forwarded_prefix(request: Request) -> str:
-    raw = (request.headers.get("x-forwarded-prefix") or "").strip()
-    if not raw.startswith("/") or raw.startswith("//") or "://" in raw:
-        return ""
-    return raw.rstrip("/")
-
-
-def _cookie_path(request: Request) -> str:
-    return _forwarded_prefix(request) or "/"
-
-
-def _cookie_secure(request: Request) -> bool:
-    proto = (request.headers.get("x-forwarded-proto") or request.url.scheme or "").lower()
-    return proto == "https"
 
 
 def require_admin(request: Request) -> None:
@@ -574,9 +559,9 @@ def create_app(data_dir: Path) -> FastAPI:
             value=token,
             httponly=True,
             samesite="lax",
-            secure=_cookie_secure(request),
+            secure=cookie_secure(request),
             max_age=SESSION_MAX_AGE_SECONDS,
-            path=_cookie_path(request),
+            path=cookie_path(request),
         )
         return {"admin": True}
 
@@ -586,8 +571,8 @@ def create_app(data_dir: Path) -> FastAPI:
             key="session",
             httponly=True,
             samesite="lax",
-            secure=_cookie_secure(request),
-            path=_cookie_path(request),
+            secure=cookie_secure(request),
+            path=cookie_path(request),
         )
         return {"admin": False}
 
