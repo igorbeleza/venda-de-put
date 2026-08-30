@@ -62,3 +62,22 @@ def test_personal_page_contains_every_yellow_workbook_input(tmp_path: Path):
     assert "sem dado" in js
     assert 'fetch("/api/' not in js
     assert "fetch(`/api/" not in js
+
+
+
+def test_personal_performance_panels_and_no_new_metrics(tmp_path: Path):
+    client = TestClient(create_app(data_dir=tmp_path))
+    html = client.get("/carteira").text
+    js = client.get("/static/carteira.js").text
+    for element_id in (
+        "personal-summary-cards", "personal-market-stamp", "missing-market-data",
+        "cash-margin-summary", "open-sort", "open-filter", "open-options-table",
+        "assets-summary-table", "premium-year", "stock-allocation-chart",
+        "put-risk-chart", "monthly-premium-chart", "evolution-table",
+    ):
+        assert f'id="{element_id}"' in html
+    assert "function renderBars" in js
+    assert 'api(`summary?year=${' in js or 'api("summary?year="' in js
+    for forbidden in ("ROI anual", "benchmark", "taxa de acerto", "gregas"):
+        assert forbidden not in html
+        assert forbidden not in js

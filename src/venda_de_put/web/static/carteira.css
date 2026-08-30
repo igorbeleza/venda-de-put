@@ -187,3 +187,57 @@ footer {
   margin-top: 0;
   color: var(--verde);
 }
+
+form + .pane-block {
+  margin-top: 24px;
+}
+
+#carteira-pane-resumo h3 {
+  margin: 16px 0 8px;
+  color: var(--verde);
+  font-size: 1rem;
+}
+
+#personal-summary-cards article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+#personal-summary-cards strong.calculated {
+  font-size: 1.1rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+#personal-market-stamp,
+#missing-market-data,
+#cash-margin-summary {
+  color: var(--ink-2);
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.bar-value {
+  display: block;
+  height: 16px;
+  background: var(--verde);
+  border-radius: 8px;
+  min-width: 0;
+}

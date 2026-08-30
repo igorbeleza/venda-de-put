@@ -93,6 +93,321 @@ function formatMoney(cents) {
     : (cents / 100).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
 }
 
+let lastSummary = null;
+const MONTH_LABELS = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+const COVERAGE_LABEL = {
+  no_calls: "Sem calls",
+  covered: "Coberta",
+  uncovered: "Descoberta",
+};
+
+function formatPercent(value) {
+  return value == null
+    ? "sem dado"
+    : value.toLocaleString("pt-BR", {
+      style: "percent",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+}
+
+function formatTimestamp(value) {
+  if (!value) return "sem dado";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return String(value);
+  return dt.toLocaleString("pt-BR");
+}
+
+function selectedPremiumYear() {
+  const input = document.getElementById("premium-year");
+  const raw = input && input.value ? Number.parseInt(input.value, 10) : NaN;
+  if (Number.isInteger(raw) && raw >= 2000 && raw <= 2100) return raw;
+  return new Date().getFullYear();
+}
+
+function summaryCard(label, valueText) {
+  const article = document.createElement("article");
+  const title = document.createElement("span");
+  title.textContent = label;
+  const value = document.createElement("strong");
+  value.className = "calculated";
+  value.textContent = valueText;
+  article.append(title, value);
+  return article;
+}
+
+function renderCards(summary) {
+  const node = document.getElementById("personal-summary-cards");
+  if (!node) return;
+  node.replaceChildren();
+  const cards = [
+    ["Prêmios recebidos", formatMoney(summary.premium_received_cents)],
+    ["Resultado líquido em opções", formatMoney(summary.option_net_result_cents)],
+    ["Lucro realizado em ações", formatMoney(summary.realized_stock_cents)],
+    ["Lucro realizado total", formatMoney(summary.realized_total_cents)],
+    ["Resultado não realizado", formatMoney(summary.unrealized_result_cents)],
+    ["Patrimônio em ações", formatMoney(summary.stock_market_value_cents)],
+    ["Risco de puts", formatMoney(summary.put_capital_at_risk_cents)],
+    ["Operações registradas / abertas", `${summary.operation_count} / ${summary.open_operation_count}`],
+    ["Calls descobertas", String(summary.uncovered_call_count)],
+    ["Margem", formatMoney(summary.margin_market_value_cents)],
+    ["Folga", formatMoney(summary.headroom_cents)],
+    ["Patrimônio líquido", formatMoney(summary.net_worth_cents)],
+  ];
+  cards.forEach(([label, value]) => node.append(summaryCard(label, value)));
+}
+
+function renderMarketStamp(summary) {
+  const node = document.getElementById("personal-market-stamp");
+  if (!node) return;
+  node.textContent = summary.market_generated_at
+    ? `Mercado em ${formatTimestamp(summary.market_generated_at)}`
+    : "Mercado: sem dado";
+}
+
+function renderMissingQuotes(summary) {
+  const node = document.getElementById("missing-market-data");
+  if (!node) return;
+  const quotes = summary.missing_quotes || [];
+  node.textContent = quotes.length
+    ? `Cotações ausentes: ${quotes.join(", ")}`
+    : "";
+}
+
+function renderCashMargin(summary) {
+  const node = document.getElementById("cash-margin-summary");
+  if (!node) return;
+  node.replaceChildren();
+  const cash = document.createElement("p");
+  cash.textContent = `Caixa: ${formatMoney(summary.cash_cents)}`;
+  const margin = document.createElement("p");
+  margin.textContent = `Margem: ${formatMoney(summary.margin_market_value_cents)}`;
+  node.append(cash, margin);
+}
+
+function compareNullableLast(a, b, getValue, descending) {
+  const va = getValue(a);
+  const vb = getValue(b);
+  const aMissing = va == null;
+  const bMissing = vb == null;
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  if (va === vb) return 0;
+  if (descending) return va < vb ? 1 : -1;
+  return va < vb ? -1 : 1;
+}
+
+function sortOpenOperations(rows) {
+  const mode = (document.getElementById("open-sort") || {}).value || "days";
+  const sorted = rows.slice();
+  sorted.sort((a, b) => {
+    let cmp = 0;
+    if (mode === "profit") {
+      cmp = compareNullableLast(a, b, (row) => row.open_profit_cents, true);
+    } else if (mode === "distance") {
+      cmp = compareNullableLast(
+        a,
+        b,
+        (row) => (row.distance_cents == null ? null : Math.abs(row.distance_cents)),
+        false,
+      );
+    } else if (mode === "strike") {
+      cmp = a.strike_cents - b.strike_cents;
+    } else {
+      cmp = a.days_to_expiry - b.days_to_expiry;
+    }
+    if (cmp !== 0) return cmp;
+    return String(a.option_ticker).localeCompare(String(b.option_ticker));
+  });
+  return sorted;
+}
+
+function rebuildOpenFilter(summary) {
+  const select = document.getElementById("open-filter");
+  if (!select) return;
+  const current = select.value;
+  const tickers = [...new Set((summary.open_operations || []).map((row) => row.underlying_ticker))]
+    .filter(Boolean)
+    .sort();
+  select.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = "Todos";
+  select.append(all);
+  tickers.forEach((ticker) => {
+    const option = document.createElement("option");
+    option.value = ticker;
+    option.textContent = ticker;
+    select.append(option);
+  });
+  select.value = tickers.includes(current) ? current : "";
+}
+
+function fillDataTable(tableId, headers, rows, renderRow) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.replaceChildren();
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  headers.forEach((title) => {
+    const th = document.createElement("th");
+    th.textContent = title;
+    headRow.append(th);
+  });
+  thead.append(headRow);
+  const tbody = document.createElement("tbody");
+  rows.forEach((row) => tbody.append(renderRow(row)));
+  table.append(thead, tbody);
+}
+
+function renderOpenOptions(summary) {
+  const ticker = (document.getElementById("open-filter") || {}).value || "";
+  const rows = (summary.open_operations || []).filter((row) => (
+    !ticker || row.underlying_ticker === ticker
+  ));
+  fillDataTable(
+    "open-options-table",
+    ["Ativo", "Opção", "Tipo", "Qtd", "Strike", "Vencimento", "Moneyness", "L/P", "Dias"],
+    sortOpenOperations(rows),
+    (row) => {
+      const tr = document.createElement("tr");
+      tr.append(
+        textCell(row.underlying_ticker),
+        textCell(row.option_ticker),
+        textCell(KIND_LABEL[row.option_kind] || row.option_kind),
+        textCell(row.quantity),
+        moneyCell(row.strike_cents),
+        textCell(row.expiry_date),
+        textCell(row.moneyness),
+        moneyCell(row.open_profit_cents, true),
+        textCell(row.days_to_expiry),
+      );
+      return tr;
+    },
+  );
+}
+
+function renderAssets(summary) {
+  fillDataTable(
+    "assets-summary-table",
+    [
+      "Ativo", "Spot", "Qtd", "Preço médio", "Valor atual", "Não realizado",
+      "Calls abertas", "Cobertura", "Puts abertas", "Risco de puts",
+      "Prêmios", "Realizado em ações", "Lucro total",
+    ],
+    summary.assets || [],
+    (row) => {
+      const tr = document.createElement("tr");
+      tr.append(
+        textCell(row.ticker),
+        moneyCell(row.spot_cents),
+        textCell(row.shares),
+        moneyCell(row.average_buy_price_cents),
+        moneyCell(row.market_value_cents),
+        moneyCell(row.unrealized_cents, true),
+        textCell(row.open_call_quantity),
+        textCell(COVERAGE_LABEL[row.coverage] || row.coverage),
+        textCell(row.open_put_quantity),
+        moneyCell(row.put_risk_cents, true),
+        moneyCell(row.premium_received_cents, true),
+        moneyCell(row.realized_stock_cents, true),
+        moneyCell(row.total_profit_cents, true),
+      );
+      return tr;
+    },
+  );
+}
+
+function renderEvolution(summary) {
+  fillDataTable(
+    "evolution-table",
+    [
+      "Data", "Custódia", "Aportes líquidos", "Fluxo do período",
+      "Resultado total", "Lucro do período", "Retorno do período", "Retorno acumulado",
+    ],
+    summary.evolution || [],
+    (row) => {
+      const tr = document.createElement("tr");
+      tr.append(
+        textCell(row.as_of_date),
+        moneyCell(row.custody_cents),
+        moneyCell(row.net_contributions_cents, true),
+        moneyCell(row.period_flow_cents, true),
+        moneyCell(row.total_result_cents, true),
+        moneyCell(row.period_profit_cents, true),
+      );
+      const period = document.createElement("td");
+      period.className = "calculated";
+      period.textContent = formatPercent(row.period_return);
+      const cumulative = document.createElement("td");
+      cumulative.className = "calculated";
+      cumulative.textContent = formatPercent(row.cumulative_return);
+      tr.append(period, cumulative);
+      return tr;
+    },
+  );
+}
+
+function renderBars(container, rows, valueKey) {
+  container.replaceChildren();
+  const known = rows.filter((row) => row[valueKey] != null);
+  if (!known.length) {
+    const missing = document.createElement("p");
+    missing.textContent = "sem dado";
+    container.append(missing);
+    return;
+  }
+  const max = Math.max(0, ...known.map((row) => Math.abs(row[valueKey])));
+  known.forEach((row) => {
+    const line = document.createElement("div");
+    line.className = "bar-row";
+    const label = document.createElement("span");
+    label.textContent = row.label;
+    const bar = document.createElement("span");
+    bar.className = "bar-value";
+    bar.style.width = max === 0 ? "0" : `${Math.abs(row[valueKey]) / max * 100}%`;
+    bar.title = formatMoney(row[valueKey]);
+    line.append(label, bar);
+    container.append(line);
+  });
+}
+
+function renderCharts(summary) {
+  const stockChart = document.getElementById("stock-allocation-chart");
+  const putChart = document.getElementById("put-risk-chart");
+  const monthlyChart = document.getElementById("monthly-premium-chart");
+  if (stockChart) renderBars(stockChart, summary.stock_allocation || [], "value_cents");
+  if (putChart) renderBars(putChart, summary.put_risk_allocation || [], "value_cents");
+  if (!monthlyChart) return;
+  const monthly = summary.monthly_premiums_cents || [];
+  const monthlyRows = monthly.map((value, index) => ({
+    label: MONTH_LABELS[index] || String(index + 1),
+    value_cents: value,
+  }));
+  renderBars(monthlyChart, monthlyRows, "value_cents");
+}
+
+function renderSummary(summary) {
+  renderCards(summary);
+  renderMarketStamp(summary);
+  renderMissingQuotes(summary);
+  renderCashMargin(summary);
+  rebuildOpenFilter(summary);
+  renderOpenOptions(summary);
+  renderAssets(summary);
+  renderCharts(summary);
+  renderEvolution(summary);
+}
+
+function renderOpenFromLast() {
+  if (lastSummary) renderOpenOptions(lastSummary);
+}
+
+
 function textCell(value) {
   const td = document.createElement("td");
   td.textContent = value == null || value === "" ? "sem dado" : String(value);
@@ -280,9 +595,13 @@ async function loadAccount() {
 }
 
 async function loadSummary() {
+  const year = selectedPremiumYear();
+  const yearInput = document.getElementById("premium-year");
+  if (yearInput && !yearInput.value) yearInput.value = String(year);
   try {
-    const year = new Date().getFullYear();
-    await api(`summary?year=${year}`);
+    const summary = await api(`summary?year=${year}`);
+    lastSummary = summary;
+    renderSummary(summary);
   } catch (_err) {
     /* não inventa números quando o resumo falha */
   }
@@ -685,5 +1004,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input) input.addEventListener("input", () => clearFieldError(id));
   });
   toggleCloseFields();
+  const openSort = document.getElementById("open-sort");
+  const openFilter = document.getElementById("open-filter");
+  const premiumYear = document.getElementById("premium-year");
+  if (openSort) openSort.addEventListener("change", renderOpenFromLast);
+  if (openFilter) openFilter.addEventListener("change", renderOpenFromLast);
+  if (premiumYear) premiumYear.addEventListener("change", () => { loadSummary(); });
   loadSession();
 });

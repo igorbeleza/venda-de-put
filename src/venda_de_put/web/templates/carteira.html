@@ -64,6 +64,50 @@
           <button type="submit">Salvar caixa</button>
         </div>
       </form>
+      <div class="pane-block">
+        <h2>Desempenho</h2>
+        <div id="personal-summary-cards" class="summary-grid"></div>
+        <p id="personal-market-stamp"></p>
+        <div id="missing-market-data" role="status"></div>
+        <div id="cash-margin-summary"></div>
+      </div>
+      <div class="pane-block">
+        <h2>Opções abertas</h2>
+        <div class="form-grid">
+          <label>Ordenar
+            <select id="open-sort">
+              <option value="days">Dias</option>
+              <option value="profit">L/P</option>
+              <option value="distance">Distância</option>
+              <option value="strike">Strike</option>
+            </select>
+          </label>
+          <label>Ativo
+            <select id="open-filter"><option value="">Todos</option></select>
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table id="open-options-table" class="data-table"></table>
+        </div>
+      </div>
+      <div class="pane-block">
+        <h2>Visão por ativo</h2>
+        <div class="table-scroll">
+          <table id="assets-summary-table" class="data-table"></table>
+        </div>
+      </div>
+      <div class="pane-block">
+        <h2>Prêmios e alocação</h2>
+        <label>Ano
+          <input id="premium-year" inputmode="numeric" maxlength="4">
+        </label>
+        <h3>Alocação em ações</h3>
+        <div id="stock-allocation-chart" class="bar-chart"></div>
+        <h3>Risco de puts</h3>
+        <div id="put-risk-chart" class="bar-chart"></div>
+        <h3>Prêmio mensal</h3>
+        <div id="monthly-premium-chart" class="bar-chart"></div>
+      </div>
     </section>
     <section id="carteira-pane-movimentos" hidden>
       <h2>Minha carteira</h2>
@@ -285,6 +329,12 @@
             </thead>
             <tbody id="flows-body"></tbody>
           </table>
+        </div>
+      </div>
+      <div class="pane-block">
+        <h2>Evolução calculada</h2>
+        <div class="table-scroll">
+          <table id="evolution-table" class="data-table"></table>
         </div>
       </div>
     </section>
