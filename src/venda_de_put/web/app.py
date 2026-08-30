@@ -554,7 +554,7 @@ def create_app(data_dir: Path) -> FastAPI:
     @app.middleware("http")
     async def no_cache_frontend(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith("/static/"):
+        if request.url.path in {"/", "/carteira"} or request.url.path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -563,6 +563,11 @@ def create_app(data_dir: Path) -> FastAPI:
         html = (templates_dir / "index.html").read_text(encoding="utf-8")
         html = html.replace("{{APP_VERSION}}", __version__, 1)
         return HTMLResponse(html)
+
+    @app.get("/carteira")
+    def carteira_home():
+        html = (templates_dir / "carteira.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace("{{APP_VERSION}}", __version__, 1))
 
     @app.post("/api/login")
     def login(body: dict, request: Request, response: Response):

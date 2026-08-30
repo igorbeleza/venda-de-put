@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carteira pessoal — Venda de PUT</title>
+  <link rel="stylesheet" href="static/carteira.css">
+</head>
+<body>
+<main class="carteira-shell">
+  <header class="carteira-header">
+    <a href="./" class="back-link">← Dashboard público</a>
+    <h1>Carteira pessoal</h1>
+    <button id="carteira-logout" type="button" hidden>Sair</button>
+  </header>
+  <section id="carteira-auth" aria-labelledby="auth-title">
+    <h2 id="auth-title">Entre ou crie seu cadastro</h2>
+    <div class="auth-grid">
+    <form id="register-form">
+      <h3>Criar cadastro</h3>
+      <label>Usuário
+        <input id="register-username" name="username" autocomplete="username"
+               pattern="[a-z0-9][a-z0-9._-]{2,31}" minlength="3" maxlength="32" required>
+      </label>
+      <label>Senha
+        <input id="register-password" name="password" type="password"
+               autocomplete="new-password" minlength="12" maxlength="128" required>
+      </label>
+      <button type="submit">Criar cadastro</button>
+    </form>
+    <form id="login-form">
+      <h3>Entrar</h3>
+      <label>Usuário
+        <input id="login-username" name="username" autocomplete="username" required>
+      </label>
+      <label>Senha
+        <input id="login-user-password" name="password" type="password"
+               autocomplete="current-password" minlength="12" maxlength="128" required>
+      </label>
+      <button type="submit">Entrar</button>
+    </form>
+    </div>
+    <p id="auth-message" role="status" aria-live="polite"></p>
+  </section>
+  <section id="carteira-app" hidden>
+    <nav class="carteira-nav" aria-label="Carteira pessoal">
+      <button type="button" data-pane="resumo" aria-selected="true">Resumo</button>
+      <button type="button" data-pane="movimentos">Minha carteira</button>
+      <button type="button" data-pane="operacoes">Operações</button>
+      <button type="button" data-pane="evolucao">Evolução</button>
+    </nav>
+    <section id="carteira-pane-resumo"></section>
+    <section id="carteira-pane-movimentos" hidden></section>
+    <section id="carteira-pane-operacoes" hidden></section>
+    <section id="carteira-pane-evolucao" hidden></section>
+  </section>
+  <footer>Ferramenta de seleção, não recomendação de compra ou venda de ativo. <span class="app-version">versão {{APP_VERSION}}</span></footer>
+</main>
+<script src="static/carteira.js"></script>
+</body>
+</html>

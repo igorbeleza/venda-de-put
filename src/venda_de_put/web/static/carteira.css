@@ -1,0 +1,116 @@
+:root {
+  --page: #b4aea3;
+  --surface: #d5cfc4;
+  --ink: #1a1713;
+  --ink-2: #5a554c;
+  --line: #9c968a;
+  --verde: #14492e;
+  --field: #e4ddd2;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.carteira-shell { max-width: 1440px; margin: 0 auto; padding: 16px; }
+
+.carteira-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.carteira-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--verde);
+}
+
+.back-link {
+  color: var(--verde);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+.auth-grid, .form-grid, .summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+#carteira-auth form,
+#carteira-app section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  color: var(--ink-2);
+}
+
+.editable-field input, .editable-field select, .editable-field textarea { background: #fff8dc; }
+.calculated { background: #e9f1ed; }
+.table-scroll { overflow-x: auto; }
+
+.carteira-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.carteira-nav button[aria-selected="true"] {
+  background: var(--verde);
+  color: #fff;
+}
+
+.carteira-nav button, .carteira-shell button, .carteira-shell input, .carteira-shell select {
+  min-height: 44px;
+}
+
+.carteira-shell button,
+.carteira-shell input,
+.carteira-shell select {
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--field);
+  color: var(--ink);
+}
+
+.carteira-shell button {
+  cursor: pointer;
+  background: var(--verde);
+  color: #fff;
+  border-color: var(--verde);
+}
+
+#auth-message {
+  min-height: 1.4em;
+  color: #7a3410;
+}
+
+footer {
+  margin-top: 24px;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .carteira-header, .auth-grid, .form-grid, .summary-grid { grid-template-columns: 1fr; }
+  .carteira-nav { display: grid; grid-template-columns: 1fr 1fr; }
+}
