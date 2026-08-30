@@ -20,6 +20,7 @@ SCRYPT_P = 1
 SCRYPT_DKLEN = 32
 SESSION_SECONDS = 12 * 3600
 USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,31}$")
+BASE64_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class AuthError(ValueError):
@@ -67,14 +68,25 @@ def _b64encode(value: bytes) -> str:
 
 
 def _b64decode(value: str) -> bytes:
+    if not BASE64_RE.fullmatch(value):
+        raise ValueError("base64 inválido")
     padding = "=" * (-len(value) % 4)
-    return base64.urlsafe_b64decode(value + padding)
+    decoded = base64.b64decode(
+        value + padding,
+        altchars=b"-_",
+        validate=True,
+    )
+    if _b64encode(decoded) != value:
+        raise ValueError("base64 não canônico")
+    return decoded
 
 
 def hash_password(password: str, salt: bytes | None = None) -> str:
     if not 12 <= len(password) <= 128:
         raise AuthError("senha deve ter 12 a 128 caracteres")
     actual_salt = secrets.token_bytes(16) if salt is None else salt
+    if len(actual_salt) != 16:
+        raise AuthError("salt deve ter 16 bytes")
     digest = _derive(password, actual_salt)
     return (
         f"scrypt$n=32768,r=8,p=1${_b64encode(actual_salt)}$"
@@ -93,6 +105,8 @@ def verify_password(password: str, encoded: str) -> bool:
             return False
         salt = _b64decode(salt_text)
         expected = _b64decode(digest_text)
+        if len(salt) != 16 or len(expected) != SCRYPT_DKLEN:
+            return False
         actual = _derive(password, salt)
     except (TypeError, ValueError, binascii.Error):
         return False
