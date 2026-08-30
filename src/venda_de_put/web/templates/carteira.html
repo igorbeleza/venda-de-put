@@ -118,7 +118,16 @@
         <input type="hidden" id="portfolio-id" value="">
         <div class="form-grid">
           <label class="editable-field">Data
-            <input id="portfolio-date" name="trade_date" type="date" required>
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="portfolio-date" name="trade_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" required>
+              <input type="date" id="portfolio-date-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="portfolio-date-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
           </label>
           <label class="editable-field">Ativo
             <input id="portfolio-ticker" name="ticker" maxlength="16" required>
@@ -177,7 +186,16 @@
         <input type="hidden" id="operation-id" value="">
         <div class="form-grid">
           <label class="editable-field">Data da venda
-            <input id="operation-sale-date" name="sale_date" type="date" required>
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="operation-sale-date" name="sale_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" required>
+              <input type="date" id="operation-sale-date-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="operation-sale-date-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
           </label>
           <label class="editable-field">Ativo
             <input id="operation-underlying" name="underlying" maxlength="16" required>
@@ -201,7 +219,16 @@
             <span class="field-error" id="operation-strike-error"></span>
           </label>
           <label class="editable-field">Vencimento
-            <input id="operation-expiry" name="expiry_date" type="date" required>
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="operation-expiry" name="expiry_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" required>
+              <input type="date" id="operation-expiry-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="operation-expiry-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
           </label>
           <label class="editable-field">Prêmio por ação (R$)
             <input id="operation-premium" name="premium" inputmode="decimal" required
@@ -224,7 +251,16 @@
             <span class="field-error" id="operation-close-cost-error"></span>
           </label>
           <label class="editable-field">Data da recompra
-            <input id="operation-repurchase-date" name="repurchase_date" type="date">
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="operation-repurchase-date" name="repurchase_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off">
+              <input type="date" id="operation-repurchase-date-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="operation-repurchase-date-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
           </label>
         </div>
         <div class="form-actions">
@@ -265,7 +301,16 @@
           <input type="hidden" id="custody-id" value="">
           <div class="form-grid">
             <label class="editable-field">Data
-              <input id="custody-date" name="as_of_date" type="date" required>
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="custody-date" name="as_of_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" required>
+              <input type="date" id="custody-date-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="custody-date-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
             </label>
             <label class="editable-field">Custódia total (R$)
               <input id="custody-total" name="total" inputmode="decimal" required
@@ -297,7 +342,16 @@
           <input type="hidden" id="flow-id" value="">
           <div class="form-grid">
             <label class="editable-field">Data
-              <input id="flow-date" name="flow_date" type="date" required>
+            <span class="date-combo">
+              <input type="text" class="date-combo-input" id="flow-date" name="flow_date" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" required>
+              <input type="date" id="flow-date-picker" class="date-picker-src" tabindex="-1" aria-hidden="true">
+              <button type="button" id="flow-date-cal" class="date-combo-cal-btn" aria-label="Abrir calendário" title="Calendário">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                <path d="M8 3v4M16 3v4M3 11h18"/>
+              </svg>
+              </button>
+            </span>
             </label>
             <label class="editable-field">Tipo
               <select id="flow-kind" required>

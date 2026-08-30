@@ -94,3 +94,44 @@ def test_personal_performance_panels_and_no_new_metrics(tmp_path: Path):
     for forbidden in ("ROI anual", "benchmark", "taxa de acerto", "gregas"):
         assert forbidden not in html
         assert forbidden not in js
+
+def test_personal_dates_use_brazilian_format(tmp_path: Path):
+    client = TestClient(create_app(data_dir=tmp_path))
+    html = client.get("/carteira").text
+    js = client.get("/static/carteira.js").text
+    css = client.get("/static/carteira.css").text
+    field_ids = (
+        "portfolio-date", "operation-sale-date", "operation-expiry",
+        "operation-repurchase-date", "custody-date", "flow-date",
+    )
+    for field_id in field_ids:
+        assert f'id="{field_id}"' in html
+        snippet = html.split(f'id="{field_id}"', 1)[1][:80]
+        assert 'type="date"' not in snippet
+        assert f'id="{field_id}-picker"' in html
+        assert f'id="{field_id}-cal"' in html
+    assert html.count('placeholder="dd/mm/aaaa"') == 6
+    assert "function parseBrDate" in js
+    assert "function maskBrDate" in js
+    assert "function formatBrDate" in js
+    assert "function readIsoDate" in js
+    assert "function writeBrDate" in js
+    assert "function bindDateField" in js
+    assert "showPicker" in js
+    for raw in (
+        "textCell(row.trade_date)",
+        "textCell(row.sale_date)",
+        "textCell(row.expiry_date)",
+        "textCell(row.repurchase_date)",
+        "textCell(row.closing_date)",
+        "textCell(row.as_of_date)",
+        "textCell(row.flow_date)",
+    ):
+        assert raw not in js
+    assert "dateCell(row.trade_date)" in js
+    assert "dateCell(row.expiry_date)" in js
+    assert "dateCell(row.as_of_date)" in js
+    assert 'writeBrDate("portfolio-date"' in js
+    assert 'readIsoDate("portfolio-date")' in js
+    assert ".date-combo" in css
+    assert "date-picker-src" in css

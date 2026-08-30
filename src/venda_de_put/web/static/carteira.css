@@ -255,3 +255,35 @@ form + .pane-block {
   border-radius: 8px;
   min-width: 0;
 }
+
+.date-combo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.date-combo-input { width: 8.2rem; font-variant-numeric: tabular-nums; }
+.date-combo-input[aria-invalid="true"] { box-shadow: 0 0 0 1px #a33; }
+.date-picker-src {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
+.date-combo .date-combo-cal-btn {
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--field);
+  color: var(--ink-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.date-combo .date-combo-cal-btn:hover { color: var(--ink); }

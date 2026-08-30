@@ -121,6 +121,114 @@ function formatTimestamp(value) {
   return dt.toLocaleString("pt-BR");
 }
 
+function parseBrDate(s) {
+  const t = String(s || "").trim();
+  let m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) {
+    const d = Number(m[1]);
+    const mo = Number(m[2]);
+    const y = Number(m[3]);
+    const dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return `${String(y).padStart(4, "0")}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  return null;
+}
+
+function maskBrDate(s) {
+  const d = String(s || "").replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+function formatBrDate(iso) {
+  if (!iso) return "sem dado";
+  const part = String(iso).slice(0, 10);
+  const [y, m, d] = part.split("-");
+  if (!y || !m || !d || y.length !== 4) return "sem dado";
+  return `${d}/${m}/${y}`;
+}
+
+function dateCell(iso) {
+  return textCell(formatBrDate(iso));
+}
+
+function readIsoDate(id, required = true) {
+  const el = document.getElementById(id);
+  const raw = String(el.value || "").trim();
+  if (!raw) {
+    if (!required) {
+      el.removeAttribute("aria-invalid");
+      el.setCustomValidity("");
+      return null;
+    }
+    el.setAttribute("aria-invalid", "true");
+    el.setCustomValidity("Informe a data em dd/mm/aaaa");
+    if (el.reportValidity) el.reportValidity();
+    el.focus();
+    throw new Error("Informe a data em dd/mm/aaaa");
+  }
+  const iso = parseBrDate(raw);
+  if (!iso) {
+    el.setAttribute("aria-invalid", "true");
+    el.setCustomValidity("Informe a data em dd/mm/aaaa");
+    if (el.reportValidity) el.reportValidity();
+    el.focus();
+    throw new Error("Informe a data em dd/mm/aaaa");
+  }
+  el.removeAttribute("aria-invalid");
+  el.setCustomValidity("");
+  return iso;
+}
+
+function writeBrDate(id, iso) {
+  const el = document.getElementById(id);
+  const picker = document.getElementById(`${id}-picker`);
+  const shown = iso ? formatBrDate(iso) : "";
+  const value = shown === "sem dado" ? "" : shown;
+  if (el) {
+    el.value = value;
+    el.removeAttribute("aria-invalid");
+    el.setCustomValidity("");
+  }
+  if (picker) picker.value = value ? (parseBrDate(value) || "") : "";
+}
+
+function bindDateField(id) {
+  const el = document.getElementById(id);
+  const picker = document.getElementById(`${id}-picker`);
+  const cal = document.getElementById(`${id}-cal`);
+  if (!el || !picker) return;
+  el.addEventListener("input", () => {
+    el.value = maskBrDate(el.value);
+    el.removeAttribute("aria-invalid");
+    el.setCustomValidity("");
+    const iso = parseBrDate(el.value);
+    if (iso) picker.value = iso;
+  });
+  picker.addEventListener("change", () => {
+    if (!picker.value) return;
+    el.value = formatBrDate(picker.value);
+    el.removeAttribute("aria-invalid");
+    el.setCustomValidity("");
+  });
+  if (cal) {
+    cal.addEventListener("click", () => {
+      const iso = parseBrDate(el.value);
+      if (iso) picker.value = iso;
+      try {
+        picker.showPicker();
+      } catch (e) {
+        picker.focus();
+        picker.click();
+      }
+    });
+  }
+}
+
+
 function selectedPremiumYear() {
   const input = document.getElementById("premium-year");
   const raw = input && input.value ? Number.parseInt(input.value, 10) : NaN;
@@ -281,7 +389,7 @@ function renderOpenOptions(summary) {
         textCell(KIND_LABEL[row.option_kind] || row.option_kind),
         textCell(row.quantity),
         moneyCell(row.strike_cents),
-        textCell(row.expiry_date),
+        dateCell(row.expiry_date),
         textCell(row.moneyness),
         moneyCell(row.open_profit_cents, true),
         textCell(row.days_to_expiry),
@@ -333,7 +441,7 @@ function renderEvolution(summary) {
     (row) => {
       const tr = document.createElement("tr");
       tr.append(
-        textCell(row.as_of_date),
+        dateCell(row.as_of_date),
         moneyCell(row.custody_cents),
         moneyCell(row.net_contributions_cents, true),
         moneyCell(row.period_flow_cents, true),
@@ -565,7 +673,7 @@ function toggleCloseFields() {
   repurchase.required = isEarly;
   if (!isEarly) {
     cost.value = "";
-    repurchase.value = "";
+    writeBrDate("operation-repurchase-date", "");
     clearFieldError("operation-close-cost");
   }
 }
@@ -613,7 +721,7 @@ async function loadPortfolio() {
   fillTable("portfolio-body", rows, (row) => {
     const tr = document.createElement("tr");
     tr.append(
-      textCell(row.trade_date),
+      dateCell(row.trade_date),
       textCell(row.ticker),
       textCell(CLASS_LABEL[row.asset_class] || row.asset_class),
       textCell(SIDE_LABEL[row.side] || row.side),
@@ -632,19 +740,19 @@ async function loadOperations() {
   fillTable("operations-body", rows, (row) => {
     const tr = document.createElement("tr");
     tr.append(
-      textCell(row.sale_date),
+      dateCell(row.sale_date),
       textCell(row.underlying_ticker),
       textCell(row.option_ticker),
       textCell(KIND_LABEL[row.option_kind] || row.option_kind),
       textCell(row.quantity),
       moneyCell(row.strike_cents),
-      textCell(row.expiry_date),
+      dateCell(row.expiry_date),
       moneyCell(row.premium_per_share_cents),
       textCell(STATUS_LABEL[row.status] || row.status),
       moneyCell(row.close_cost_per_share_cents),
-      textCell(row.repurchase_date),
+      dateCell(row.repurchase_date),
       moneyCell(row.premium_total_cents, true),
-      textCell(row.closing_date),
+      dateCell(row.closing_date),
       moneyCell(row.net_result_cents, true),
       textCell(row.narrative),
       actionCell(editOperation, deleteOperation, row.id),
@@ -663,7 +771,7 @@ async function loadCustody() {
   fillTable("custody-body", rows, (row) => {
     const tr = document.createElement("tr");
     tr.append(
-      textCell(row.as_of_date),
+      dateCell(row.as_of_date),
       moneyCell(row.total_cents),
       actionCell(editCustody, deleteCustody, row.id),
     );
@@ -677,7 +785,7 @@ async function loadCashFlows() {
   fillTable("flows-body", rows, (row) => {
     const tr = document.createElement("tr");
     tr.append(
-      textCell(row.flow_date),
+      dateCell(row.flow_date),
       textCell(FLOW_LABEL[row.kind] || row.kind),
       moneyCell(row.amount_cents),
       textCell(row.note),
@@ -719,7 +827,7 @@ async function savePortfolioEntry(event) {
   try {
     const id = document.getElementById("portfolio-id").value;
     const body = {
-      trade_date: document.getElementById("portfolio-date").value,
+      trade_date: readIsoDate("portfolio-date"),
       ticker: document.getElementById("portfolio-ticker").value.trim().toUpperCase(),
       asset_class: document.getElementById("portfolio-class").value,
       side: document.getElementById("portfolio-side").value,
@@ -743,7 +851,7 @@ function editPortfolioEntry(id) {
   const row = store.portfolio.get(Number(id));
   if (!row) return;
   document.getElementById("portfolio-id").value = String(row.id);
-  document.getElementById("portfolio-date").value = row.trade_date;
+  writeBrDate("portfolio-date", row.trade_date);
   document.getElementById("portfolio-ticker").value = row.ticker;
   document.getElementById("portfolio-class").value = row.asset_class;
   document.getElementById("portfolio-side").value = row.side;
@@ -784,19 +892,19 @@ async function saveOperation(event) {
     const id = document.getElementById("operation-id").value;
     const status = document.getElementById("operation-status").value;
     const body = {
-      sale_date: document.getElementById("operation-sale-date").value,
+      sale_date: readIsoDate("operation-sale-date"),
       underlying_ticker: document.getElementById("operation-underlying").value.trim().toUpperCase(),
       option_ticker: document.getElementById("operation-option-ticker").value.trim().toUpperCase(),
       option_kind: document.getElementById("operation-kind").value,
       quantity: Number.parseInt(document.getElementById("operation-quantity").value, 10),
       strike_cents: moneyToCents(document.getElementById("operation-strike").value),
-      expiry_date: document.getElementById("operation-expiry").value,
+      expiry_date: readIsoDate("operation-expiry"),
       premium_per_share_cents: moneyToCents(document.getElementById("operation-premium").value),
       status,
       close_cost_per_share_cents: status === "closed_early"
         ? moneyToCents(document.getElementById("operation-close-cost").value) : null,
       repurchase_date: status === "closed_early"
-        ? document.getElementById("operation-repurchase-date").value : null,
+        ? readIsoDate("operation-repurchase-date") : null,
     };
     await api(id ? `operations/${id}` : "operations", {
       method: id ? "PUT" : "POST",
@@ -825,19 +933,19 @@ function editOperation(id) {
   const row = store.operations.get(Number(id));
   if (!row) return;
   document.getElementById("operation-id").value = String(row.id);
-  document.getElementById("operation-sale-date").value = row.sale_date;
+  writeBrDate("operation-sale-date", row.sale_date);
   document.getElementById("operation-underlying").value = row.underlying_ticker;
   document.getElementById("operation-option-ticker").value = row.option_ticker;
   document.getElementById("operation-kind").value = row.option_kind;
   document.getElementById("operation-quantity").value = String(row.quantity);
   document.getElementById("operation-strike").value = centsToInput(row.strike_cents);
-  document.getElementById("operation-expiry").value = row.expiry_date;
+  writeBrDate("operation-expiry", row.expiry_date);
   document.getElementById("operation-premium").value = centsToInput(row.premium_per_share_cents);
   document.getElementById("operation-status").value = row.status;
   toggleCloseFields();
   if (row.status === "closed_early") {
     document.getElementById("operation-close-cost").value = centsToInput(row.close_cost_per_share_cents);
-    document.getElementById("operation-repurchase-date").value = row.repurchase_date || "";
+    writeBrDate("operation-repurchase-date", row.repurchase_date || "");
   }
   showPane("operacoes");
 }
@@ -870,7 +978,7 @@ async function saveCustody(event) {
   try {
     const id = document.getElementById("custody-id").value;
     const body = {
-      as_of_date: document.getElementById("custody-date").value,
+      as_of_date: readIsoDate("custody-date"),
       total_cents: readMoney("custody-total", true),
     };
     await api(id ? `custody/${id}` : "custody", {
@@ -889,7 +997,7 @@ function editCustody(id) {
   const row = store.custody.get(Number(id));
   if (!row) return;
   document.getElementById("custody-id").value = String(row.id);
-  document.getElementById("custody-date").value = row.as_of_date;
+  writeBrDate("custody-date", row.as_of_date);
   document.getElementById("custody-total").value = centsToInput(row.total_cents);
   clearFieldError("custody-total");
   showPane("evolucao");
@@ -923,7 +1031,7 @@ async function saveCashFlow(event) {
   try {
     const id = document.getElementById("flow-id").value;
     const body = {
-      flow_date: document.getElementById("flow-date").value,
+      flow_date: readIsoDate("flow-date"),
       kind: document.getElementById("flow-kind").value,
       amount_cents: readMoney("flow-amount"),
       note: document.getElementById("flow-note").value.trim(),
@@ -944,7 +1052,7 @@ function editCashFlow(id) {
   const row = store.flows.get(Number(id));
   if (!row) return;
   document.getElementById("flow-id").value = String(row.id);
-  document.getElementById("flow-date").value = row.flow_date;
+  writeBrDate("flow-date", row.flow_date);
   document.getElementById("flow-kind").value = row.kind;
   document.getElementById("flow-amount").value = centsToInput(row.amount_cents);
   document.getElementById("flow-note").value = row.note || "";
@@ -1004,6 +1112,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (input) input.addEventListener("input", () => clearFieldError(id));
   });
   toggleCloseFields();
+  [
+    "portfolio-date", "operation-sale-date", "operation-expiry",
+    "operation-repurchase-date", "custody-date", "flow-date",
+  ].forEach(bindDateField);
   const openSort = document.getElementById("open-sort");
   const openFilter = document.getElementById("open-filter");
   const premiumYear = document.getElementById("premium-year");
