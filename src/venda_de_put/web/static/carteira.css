@@ -32,13 +32,27 @@ html, body {
   color: var(--verde);
 }
 
-.back-link {
-  color: var(--verde);
-  text-decoration: none;
-  font-weight: 600;
+.screens-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.back-link:hover { text-decoration: underline; }
+.screens-nav a {
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.screens-nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--verde);
+}
+
+.screens-nav a:hover { text-decoration: underline; }
 
 .auth-grid, .form-grid, .summary-grid {
   display: grid;

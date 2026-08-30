@@ -17,13 +17,26 @@ def test_personal_page_is_separate_and_assets_are_relative(tmp_path: Path):
     assert 'href="/static/' not in html
     assert 'src="/static/' not in html
     assert 'href="./"' in html
+    screens = html.split('aria-label="Telas"', 1)[1].split("</nav>", 1)[0]
+    assert "Venda de PUT" in screens
+    assert 'href="carteira"' in screens
+    assert "Carteira pessoal" in screens
+    assert 'role="tab"' not in html
 
 
 def test_public_page_keeps_exactly_eight_tabs_and_links_to_wallet(tmp_path: Path):
     html = TestClient(create_app(data_dir=tmp_path)).get("/").text
     assert html.count('role="tab"') == 8
-    assert 'href="carteira"' in html
+    tablist = html.split('role="tablist"', 1)[1].split("</div>", 1)[0]
+    assert "Carteira pessoal" not in tablist
+    sidebar = html.split('<aside class="sidebar">', 1)[1].split("</aside>", 1)[0]
+    assert "Carteira pessoal" in sidebar
+    assert 'href="carteira"' in sidebar
+    assert 'class="nav-item"' in sidebar
     assert 'data-tab="carteira"' not in html
+    assert 'class="personal-wallet-link"' not in html
+    header = html.split('<header class="tabs">', 1)[1].split("</header>", 1)[0]
+    assert "Carteira pessoal" not in header
 
 
 def test_personal_js_uses_only_relative_api_paths(tmp_path: Path):
