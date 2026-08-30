@@ -55,6 +55,8 @@ from venda_de_put.scrape_progress import (
 )
 from venda_de_put.snapshot import is_stale, read_snapshot, snapshot_to_dict, write_snapshot
 from venda_de_put.tz import TZ
+from venda_de_put.carteira.db import Database
+from venda_de_put.web.carteira_routes import create_carteira_router
 from venda_de_put.web.http_security import cookie_path, cookie_secure
 
 _INSTRUCOES = (
@@ -261,6 +263,9 @@ def create_app(data_dir: Path) -> FastAPI:
     data_dir = Path(data_dir)
     app = FastAPI()
     app.state.data_dir = data_dir
+    carteira_db = Database(data_dir / "carteira.sqlite3")
+    carteira_db.migrate()
+    app.state.carteira_db = carteira_db
     app.state.snapshot_path = snapshot_current(data_dir)
     app.state.config_path = data_dir / "config.json"
     app.state.feriados_path = data_dir / "feriados.json"
@@ -314,6 +319,18 @@ def create_app(data_dir: Path) -> FastAPI:
         app.state.snapshot = snap
         if app.state.snapshot_path.is_file():
             app.state.snapshot_mtime = app.state.snapshot_path.stat().st_mtime
+
+    def get_personal_snapshot() -> Snapshot | None:
+        if not app.state.snapshot_path.is_file():
+            return None
+        try:
+            return get_snap()
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            return None
+
+    app.include_router(
+        create_carteira_router(carteira_db, get_personal_snapshot)
+    )
 
     @app.get("/api/dashboard")
     def dashboard(
